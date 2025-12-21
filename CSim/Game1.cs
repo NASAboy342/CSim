@@ -30,8 +30,13 @@ public class Game1 : Game
         var random = new Random();
         for(var i = 0; i < 100; i++)
         {
-            particles.Add(new Particle(_graphics.GraphicsDevice, 2f, new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight)))));
+            particles.Add(new Particle(particles.Count+1, _graphics.GraphicsDevice, 5f, new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight)))));
         }
+
+        // var particle1 = new Particle(1, _graphics.GraphicsDevice, 3f, new Vector2(10 , 10));
+        // var particle2 = new Particle(2, _graphics.GraphicsDevice, 3f, new Vector2(20 , 20));
+        // particles.Add(particle1);
+        // particles.Add(particle2);
     }
 
     protected override void LoadContent()
@@ -50,7 +55,10 @@ public class Game1 : Game
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
 
-
+        foreach (var particle in particles)
+        {
+            particle.InteractPhysic(particles, gameTime);
+        }
 
         base.Update(gameTime);
     }

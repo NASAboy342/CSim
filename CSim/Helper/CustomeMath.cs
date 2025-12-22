@@ -7,7 +7,7 @@ public class CustomeMath
 {
     public static float GetRedianBetweenTwoPoints(Vector2 position1, Vector2 position2)
     {
-        Vector2 dir = position2 - position1;
+        Vector2 dir = position1 - position2;
         return MathF.Atan2(dir.Y, dir.X);
     }
 
@@ -20,7 +20,7 @@ public class CustomeMath
         return angleDeg;
     }
 
-    public static Vector2 GetNewPositionByAngleAndDistance(Vector2 position, float angleDegree, float acceleration, GameTime gameTime)
+    public static Vector2 GetNewPositionByAngleAndDistance(Vector2 position, float angleDegree, float distance)
     {
         float angleRad = DegreeToRadian(angleDegree);
 
@@ -30,8 +30,8 @@ public class CustomeMath
         );
 
         Vector2 newPosition = new Vector2(
-            position.X + direction.X * acceleration * (float)gameTime.ElapsedGameTime.TotalMilliseconds, 
-            position.Y + direction.Y * acceleration * (float)gameTime.ElapsedGameTime.TotalMilliseconds
+            position.X + direction.X * distance, 
+            position.Y + direction.Y * distance
             );
         return newPosition;
     }

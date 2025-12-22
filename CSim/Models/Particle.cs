@@ -19,7 +19,8 @@ public class Particle
     private GraphicsDevice _graphicsDevice;
     public int Id { get; set; }
     public float Radius { get; set; } = 1f;
-    public float Acceleration { get; set; }
+    public float Speed { get; set; }
+    public Vector2 Velocity { get; set; } = new Vector2(0, 0);
     public Vector2 Position { get; set; } = new Vector2(0, 0);
     public Color Color { get; set; } = Color.White;
     public float Mass => Radius * MathF.PI;
@@ -51,14 +52,25 @@ public class Particle
         foreach (var particle in particles)
         {
             if (Id == particle.Id) continue;
-            FeelGravity(gameTime, particle);
+            FeelGravity(particle);
             FeelCollision(particle, gameTime);
+            Move(gameTime);
         }
     }
 
-    private void FeelCollision(Particle particle, GameTime gameTime)
+    private void Move(GameTime gameTime)
     {
-        if (IsCollided(particle)) Color = Color.Red;
+        Position = Vector2.Add(Position, Velocity * Convert.ToSingle(gameTime.ElapsedGameTime.Milliseconds));
+    }
+
+    private void FeelCollision(Particle otherParticle, GameTime gameTime)
+    {
+        if (IsCollided(otherParticle))
+        {
+            Color = Color.Red;
+            Velocity = Velocity + (2 * otherParticle.Mass)/ (Mass + otherParticle.Mass)  *  Vector2.Subtract(otherParticle.Velocity, Velocity) * Vector2.Subtract(otherParticle.Position, Position) / MathF.Pow(Vector2.Distance(Position, otherParticle.Position), 2) * Vector2.Subtract(otherParticle.Position, Position);
+
+        }
         else Color = Color.White;
     }
 
@@ -68,15 +80,16 @@ public class Particle
         return distance <= Radius + particle.Radius;
     }
 
-    private void FeelGravity(GameTime gameTime, Particle particle)
+    private void FeelGravity(Particle particle)
     {
         var angleDegree = CustomeMath.GetDegreeBetweenTwoPoints(Position, particle.Position);
         var distance = Vector2.Distance(Position, particle.Position);
         //(G * m1 * m2) / d²
         // var g = 6.67430e-11f;
-        var g = 6.67430f;
+        // var g = 6.67430f;
+        var g = 0.0667430f;
         var gravityForce = (g * Mass * particle.Mass) / MathF.Pow(distance, 2);
-        Acceleration = gravityForce / Mass;
-        Position = CustomeMath.GetNewPositionByAngleAndDistance(Position, angleDegree, Acceleration, gameTime);
+        Speed = gravityForce / Mass;
+        Velocity = Vector2.Subtract(Position, CustomeMath.GetNewPositionByAngleAndDistance(Position, angleDegree, Speed));
     }
 }

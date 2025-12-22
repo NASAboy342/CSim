@@ -30,7 +30,7 @@ public class Game1 : Game
         var random = new Random();
         for(var i = 0; i < 100; i++)
         {
-            particles.Add(new Particle(particles.Count+1, _graphics.GraphicsDevice, 5f, new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight)))));
+            particles.Add(new Particle(particles.Count+1, _graphics.GraphicsDevice, 10f, new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight)))));
         }
 
         // var particle1 = new Particle(1, _graphics.GraphicsDevice, 3f, new Vector2(10 , 10));

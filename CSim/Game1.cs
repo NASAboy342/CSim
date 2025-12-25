@@ -11,13 +11,14 @@ public class Game1 : Game
 {
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
-    private List<Particle> particles = new List<Particle>();
+    private List<Particle> _particles = new List<Particle>();
+    private Boundary _boundary;
 
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
-        _graphics.PreferredBackBufferWidth = 1500;
-        _graphics.PreferredBackBufferHeight = 700;
+        _graphics.PreferredBackBufferWidth = 1000;
+        _graphics.PreferredBackBufferHeight = 1000;
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
     }
@@ -27,14 +28,15 @@ public class Game1 : Game
         base.Initialize();
         var viewWidth = _graphics.PreferredBackBufferWidth;
         var viewHeight = _graphics.PreferredBackBufferHeight;
+        _boundary = new Boundary(_graphics, new Vector2(2, 2), _graphics.PreferredBackBufferWidth - 5, _graphics.PreferredBackBufferHeight - 5);
         var random = new Random();
-        for(var i = 0; i < 100; i++)
+        for (var i = 0; i < 100; i++)
         {
-            particles.Add(new Particle(particles.Count+1, _graphics.GraphicsDevice, 10f, new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight)))));
+            _particles.Add(new Particle(_particles.Count + 1, _graphics.GraphicsDevice, 5f, new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight))), _boundary));
         }
 
-        // var particle1 = new Particle(1, _graphics.GraphicsDevice, 3f, new Vector2(10 , 10));
-        // var particle2 = new Particle(2, _graphics.GraphicsDevice, 3f, new Vector2(20 , 20));
+        // var particle1 = new Particle(1, _graphics.GraphicsDevice, 30f, new Vector2(300 , 300));
+        // var particle2 = new Particle(2, _graphics.GraphicsDevice, 30f, new Vector2(500 , 500));
         // particles.Add(particle1);
         // particles.Add(particle2);
     }
@@ -42,12 +44,6 @@ public class Game1 : Game
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
-        _spriteBatch.Begin();
-        foreach(var particle in particles)
-        {
-            particle.Draw(_spriteBatch);
-        }
-        _spriteBatch.End();
     }
 
     protected override void Update(GameTime gameTime)
@@ -55,25 +51,23 @@ public class Game1 : Game
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
 
-        foreach (var particle in particles)
+        foreach (var particle in _particles)
         {
-            particle.InteractPhysic(particles, gameTime);
+            particle.InteractPhysic(_particles, gameTime);
         }
-
         base.Update(gameTime);
     }
 
     protected override void Draw(GameTime gameTime)
     {
-        GraphicsDevice.Clear(Color.Black);
-        _spriteBatch.Begin();
-
-        foreach(var particle in particles)
-        {
-            particle.Draw(_spriteBatch);
-        }
-
-        _spriteBatch.End();
-        base.Draw(gameTime);
+            GraphicsDevice.Clear(Color.Black);
+            _spriteBatch.Begin();
+            foreach (var particle in _particles)
+            {
+                particle.Draw(_spriteBatch);
+            }
+            _boundary.Draw(_spriteBatch);
+            _spriteBatch.End();
+            base.Draw(gameTime);
     }
 }

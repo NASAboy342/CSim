@@ -15,6 +15,11 @@ public class CustomerShape
 
     public int Radius { get; set; }
     public Color Fill { get; set; }
+    public Vector2 Origin { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public Color Stroke { get; set; }
+    public int StrokeWidth { get; internal set; }
 
     public Texture2D CreateCircleTexture()
     {
@@ -39,6 +44,31 @@ public class CustomerShape
                 else
                 {
                     colorData[index] = Color.Transparent;
+                }
+            }
+        }
+
+        texture2D.SetData(colorData);
+        return texture2D;
+    }
+
+    internal Texture2D CreateRectangleTexture()
+    {
+        var texture2D = new Texture2D(_graphicsDevice, Width, Height);
+        Color[] colorData = new Color[Width * Height];
+
+        for (int y = 0; y < Height; y++)
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                int index = y * Width + x;
+                if (x == 0 || x == Width - StrokeWidth || y == 0 || y == Height - StrokeWidth)
+                {
+                    colorData[index] = Stroke;
+                }
+                else
+                {
+                    colorData[index] = Fill;
                 }
             }
         }

@@ -6,29 +6,28 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace CSim.Models;
 
-public class Particle
+public class Particle: GameObjectBase
 {
-    public Particle(int id, GraphicsDevice graphicsDevice, float radius, Vector2 position)
+    public Particle(int id, GraphicsDevice graphicsDevice, float radius, Vector2 position, Boundary boundary)
     {
         Id = id;
         Radius = radius;
         Position = position;
         _graphicsDevice = graphicsDevice;
-        DrawTexture();
+        _boundary = boundary;
+        CreateTexture();
     }
+    private Boundary _boundary;
     private GraphicsDevice _graphicsDevice;
     public int Id { get; set; }
     public float Radius { get; set; } = 1f;
     public float Speed { get; set; }
-    public Vector2 Velocity { get; set; } = new Vector2(0, 0);
-    public Vector2 Position { get; set; } = new Vector2(0, 0);
+    
     public Color Color { get; set; } = Color.White;
     public float Mass => Radius * MathF.PI;
-
-    public Texture2D Texture2D { get; set; }
-    public void Draw(SpriteBatch spriteBatch)
+    public override void Draw(SpriteBatch spriteBatch)
     {
-        DrawTexture();
+        CreateTexture();
         if (Texture2D != null)
         {
             spriteBatch.Draw(
@@ -39,7 +38,7 @@ public class Particle
         }
     }
 
-    public void DrawTexture()
+    public override void CreateTexture()
     {
         var circleTexture = new CustomerShape(_graphicsDevice);
         circleTexture.Radius = Convert.ToInt32(Radius);
@@ -54,7 +53,18 @@ public class Particle
             if (Id == particle.Id) continue;
             FeelGravity(particle);
             FeelCollision(particle, gameTime);
-            Move(gameTime);
+        }
+        Move(gameTime);
+        Position =_boundary.Clips(Position);
+        CheckMaxVelocity();
+    }
+
+    private void CheckMaxVelocity()
+    {
+        var maxVelocity = 1f;
+        if (Velocity.Length() > maxVelocity)
+        {
+            Velocity = Vector2.Normalize(Velocity) * maxVelocity;
         }
     }
 
@@ -68,7 +78,19 @@ public class Particle
         if (IsCollided(otherParticle))
         {
             Color = Color.Red;
-            Velocity = Velocity + (2 * otherParticle.Mass)/ (Mass + otherParticle.Mass)  *  Vector2.Subtract(otherParticle.Velocity, Velocity) * Vector2.Subtract(otherParticle.Position, Position) / MathF.Pow(Vector2.Distance(Position, otherParticle.Position), 2) * Vector2.Subtract(otherParticle.Position, Position);
+
+            // var overlap = (Radius + otherParticle.Radius) - Vector2.Distance(Position, otherParticle.Position);
+            // var directionDegree = CustomeMath.GetDegreeBetweenTwoPoints(Position, otherParticle.Position);
+            // Position = CustomeMath.GetNewPositionByAngleAndDistance(Position, CustomeMath.AddDegree(directionDegree, 180f), overlap / 2f);
+            // otherParticle.Position = CustomeMath.GetNewPositionByAngleAndDistance(otherParticle.Position, directionDegree, overlap / 2f);
+            
+
+            var resultVelocity = Velocity + (((2 * otherParticle.Mass)/ (Mass + otherParticle.Mass))  *  ((Vector2.Subtract(otherParticle.Velocity, Velocity) * Vector2.Subtract(otherParticle.Position, Position)) / MathF.Pow( Math.Abs(Vector2.Distance(Position, otherParticle.Position)), 2)) * Vector2.Subtract(otherParticle.Position, Position));
+            var resultOtherParticleVelocity = otherParticle.Velocity + (2 * Mass)/ (otherParticle.Mass + Mass)  *  Vector2.Subtract(Velocity, otherParticle.Velocity) * Vector2.Subtract(Position, otherParticle.Position) / MathF.Pow(MathF.Abs(Vector2.Distance(otherParticle.Position, Position)), 2) * Vector2.Subtract(Position, otherParticle.Position);
+
+            Velocity = resultVelocity;
+            otherParticle.Velocity = resultOtherParticleVelocity;
+
 
         }
         else Color = Color.White;
@@ -90,6 +112,6 @@ public class Particle
         var g = 0.0667430f;
         var gravityForce = (g * Mass * particle.Mass) / MathF.Pow(distance, 2);
         Speed = gravityForce / Mass;
-        Velocity = Vector2.Subtract(Position, CustomeMath.GetNewPositionByAngleAndDistance(Position, angleDegree, Speed));
+        Velocity = Velocity + Vector2.Subtract(CustomeMath.GetNewPositionByAngleAndDistance(Position, angleDegree, Speed), Position);
     }
 }

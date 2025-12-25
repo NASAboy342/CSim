@@ -7,16 +7,19 @@ public class CustomeMath
 {
     public static float GetRedianBetweenTwoPoints(Vector2 position1, Vector2 position2)
     {
-        Vector2 dir = position1 - position2;
-        return MathF.Atan2(dir.Y, dir.X);
+        Vector2 dir = Vector2.Subtract(position2, position1);
+        var angle = MathF.Atan2(dir.Y, dir.X);
+        if (angle < 0)
+        {
+            angle += MathF.PI * 2;
+        }
+        return angle;
     }
 
     public static float GetDegreeBetweenTwoPoints(Vector2 position1, Vector2 position2)
     {
         float angleRad = GetRedianBetweenTwoPoints(position1, position2);
         float angleDeg = angleRad * (180f / MathF.PI);
-        // Normalize to [0, 360)
-        angleDeg = (angleDeg % 360f + 360f) % 360f;
         return angleDeg;
     }
 
@@ -39,5 +42,10 @@ public class CustomeMath
     public static float DegreeToRadian(float angleDegree)
     {
         return angleDegree * MathF.PI / 180f;
+    }
+
+    internal static float AddDegree(float directionDegree, float v)
+    {
+        return (directionDegree + v) % 360f;
     }
 }

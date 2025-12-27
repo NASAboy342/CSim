@@ -51,23 +51,49 @@ public class Game1 : Game
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
 
-        foreach (var particle in _particles)
+        try
         {
-            particle.InteractPhysic(_particles, gameTime);
+            foreach (var particle in _particles)
+            {
+                particle.InteractPhysic(_particles, gameTime);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Update Error: {ex.Message}\n{ex.StackTrace}");
+            System.Console.WriteLine($"Update Error: {ex.Message}");
         }
         base.Update(gameTime);
     }
 
     protected override void Draw(GameTime gameTime)
     {
+        try
+        {
+            if (GraphicsDevice == null || GraphicsDevice.IsDisposed)
+            {
+                System.Diagnostics.Debug.WriteLine("GraphicsDevice is null or disposed!");
+                return;
+            }
+            
             GraphicsDevice.Clear(Color.Black);
             _spriteBatch.Begin();
+            
             foreach (var particle in _particles)
             {
-                particle.Draw(_spriteBatch);
+                if (particle.Texture2D != null && !particle.Texture2D.IsDisposed)
+                {
+                    particle.Draw(_spriteBatch);
+                }
             }
             _boundary.Draw(_spriteBatch);
             _spriteBatch.End();
-            base.Draw(gameTime);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Draw Error: {ex.Message}\n{ex.StackTrace}");
+            System.Console.WriteLine($"Draw Error: {ex.Message}");
+        }
+        base.Draw(gameTime);
     }
 }

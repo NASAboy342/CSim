@@ -62,6 +62,27 @@ public class Boundary : GameObjectBase
         return position;
     }
 
+    internal Vector2 FeelBoundary(Vector2 position, Vector2 velocity, float radius)
+    {
+        if (position.X - radius < Position.X)
+        {
+            velocity.X = MathF.Abs(velocity.X);
+        }
+        if (position.X + radius > Position.X + Width)
+        {
+            velocity.X = -MathF.Abs(velocity.X);
+        }
+        if (position.Y - radius < Position.Y)
+        {
+            velocity.Y = MathF.Abs(velocity.Y);
+        }
+        if (position.Y + radius > Position.Y + Height)
+        {
+            velocity.Y = -MathF.Abs(velocity.Y);
+        }
+        return velocity;
+    }
+
     public float Width { get; set; }
     public float Height { get; set; }
 }

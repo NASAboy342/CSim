@@ -48,4 +48,13 @@ public class CustomeMath
     {
         return (directionDegree + v) % 360f;
     }
+
+    internal static float GetFloatBetween(float v1, float v2)
+    {
+        var random = new Random();
+        var min = MathF.Min(v1, v2);
+        var max = MathF.Max(v1, v2);
+        var result = Convert.ToSingle(random.NextDouble() * (max - min) + min);
+        return result;
+    }
 }

@@ -35,11 +35,12 @@ public class CustomerShape
                 Vector2 pos = new Vector2(x - Radius, y - Radius);
                 if (pos.Length() == Radius)
                 {
-                    colorData[index] = Fill;
+                    colorData[index] = new Color(Fill, 0.5f);
+
                 }
                 else if (pos.Length() < Radius)
                 {
-                    colorData[index] = Fill;
+                    colorData[index] = new Color(Fill, 0.5f);
                 }
                 else
                 {

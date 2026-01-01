@@ -20,8 +20,8 @@ public class Game1 : Game
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
-        _graphics.PreferredBackBufferWidth = 1000;
-        _graphics.PreferredBackBufferHeight = 1000;
+        _graphics.PreferredBackBufferWidth = 500;
+        _graphics.PreferredBackBufferHeight = 500;
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
     }
@@ -33,19 +33,26 @@ public class Game1 : Game
         var viewHeight = _graphics.PreferredBackBufferHeight;
         _boundary = new Boundary(_graphics, new Vector2(2, 2), _graphics.PreferredBackBufferWidth - 5, _graphics.PreferredBackBufferHeight - 5);
         var random = new Random();
-        // for (var i = 0; i < 5; i++)
-        // {
-        //     var newPaticle = new Particle(_particles.Count + 1, _graphics.GraphicsDevice, 30f, new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight))), _boundary);
-        //     newPaticle.Velocity = new Vector2(CustomeMath.GetFloatBetween(-0.5f, 0.5f), CustomeMath.GetFloatBetween(-0.5f, 0.5f));
-        //     _particles.Add(newPaticle);
-        // }
+        for (var i = 0; i < 5; i++)
+        {
+            var newPaticle = new Particle(_particles.Count + 1, _graphics.GraphicsDevice, 30f, new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight))), _boundary);
+            newPaticle.Velocity = new Vector2(CustomeMath.GetFloatBetween(-0.5f, 0.5f), CustomeMath.GetFloatBetween(-0.5f, 0.5f));
+            _particles.Add(newPaticle);
+        }
 
-        var particle1 = new Particle(1, _graphics.GraphicsDevice, 30f, new Vector2(100 , 100), _boundary);
-        // particle1.Velocity = new Vector2(0.4f, 0);
-        // var particle2 = new Particle(2, _graphics.GraphicsDevice, 30f, new Vector2(500 , 500), _boundary);
-        // particle2.Velocity = new Vector2(0.5f, 1);
-        _particles.Add(particle1);
+        // var particle1 = new Particle(1, _graphics.GraphicsDevice, 30f, new Vector2(100 , 200), _boundary);
+        // particle1.Velocity = new Vector2(0.5f, 0.6f);
+        // var particle2 = new Particle(2, _graphics.GraphicsDevice, 30f, new Vector2(400 , 200), _boundary);
+        // particle2.Velocity = new Vector2(-0.4f, 0.5f);
+        // _particles.Add(particle1);
         // _particles.Add(particle2);
+
+        // var particle3 = new Particle(1, _graphics.GraphicsDevice, 60f, new Vector2(100 , 700), _boundary);
+        // particle3.Velocity = new Vector2(0.5f, 0);
+        // var particle4 = new Particle(2, _graphics.GraphicsDevice, 30f, new Vector2(700 , 700), _boundary);
+        // particle4.Velocity = new Vector2(-0.5f, 0);
+        // _particles.Add(particle3);
+        // _particles.Add(particle4);
     }
 
     protected override void LoadContent()
@@ -99,10 +106,11 @@ public class Game1 : Game
                 if (particle.Texture2D != null && !particle.Texture2D.IsDisposed)
                 {
                     particle.Draw(_spriteBatch);
+                    _spriteBatch.DrawString(_ingameFont, particle.Speed.ToString() , new Vector2(particle.Position.X, particle.Position.Y - (particle.Radius * 2)), Color.White);
                 }
             }
 
-            _spriteBatch.DrawString(_ingameFont, _particles.Sum(p => p.Speed).ToString(), new Vector2(10, 10), Color.White);
+            
 
 
 

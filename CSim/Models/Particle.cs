@@ -57,7 +57,6 @@ public class Particle : GameObjectBase
             FeelCollision(particle, gameTime);
         }
         Move(gameTime);
-        // Position = _boundary.Clips(Position);
         Velocity = _boundary.FeelBoundary(Position, Velocity, Radius);
         CheckMaxVelocity();
         ValidateValuesToPreventCorruption();
@@ -89,7 +88,7 @@ public class Particle : GameObjectBase
 
     private void Move(GameTime gameTime)
     {
-        Position = Vector2.Add(Position, Velocity * Convert.ToSingle(gameTime.ElapsedGameTime.Milliseconds));
+        Position = Vector2.Add(Position, Velocity);
     }
 
     private void FeelCollision(Particle otherParticle, GameTime gameTime)
@@ -110,7 +109,6 @@ public class Particle : GameObjectBase
             this.Velocity -= velocityDiffForParticle1;
             otherParticle.Velocity -= velocityDiffForParticle2;
 
-
         }
         else Color = Color.White;
     }
@@ -126,7 +124,7 @@ public class Particle : GameObjectBase
         }
 
 
-        var mass = (2 * particle2.Mass) / (particle1.Mass + particle2.Mass);
+        var mass = (2f * particle2.Mass) / (particle1.Mass + particle2.Mass);
         var velocityDiff = Vector2.Subtract(particle1.Velocity, particle2.Velocity);
         var positionDiff = Vector2.Subtract(particle1.Position, particle2.Position);
 

@@ -71,6 +71,7 @@ public class Game1 : Game
             foreach (var particle in _particles)
             {
                 particle.InteractPhysic(_particles, gameTime);
+                particle.CreateVelocityTexture();
             }
         }
         catch (Exception ex)

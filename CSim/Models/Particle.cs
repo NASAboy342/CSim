@@ -25,12 +25,19 @@ public class Particle : GameObjectBase
 
     public Color Color { get; set; } = Color.White;
     public float Mass => Radius * MathF.PI;
+    public Texture2D VelocityTexture { get; set; }
     public override void Draw(SpriteBatch spriteBatch)
     {
         if (Texture2D != null)
         {
             spriteBatch.Draw(
                 Texture2D,
+                new Vector2(Position.X - Radius, Position.Y - Radius),
+                Color
+            );
+
+            spriteBatch.Draw(
+                VelocityTexture,
                 new Vector2(Position.X - Radius, Position.Y - Radius),
                 Color
             );
@@ -46,6 +53,20 @@ public class Particle : GameObjectBase
         circleTexture.Radius = Convert.ToInt32(Radius);
         circleTexture.Fill = Color.White; // Always create white texture, use color tint when drawing
         Texture2D = circleTexture.CreateCircleTexture();
+
+        CreateVelocityTexture();
+    }
+
+    public void CreateVelocityTexture()
+    {
+        VelocityTexture?.Dispose();
+        var velocityShape = new CustomerShape(_graphicsDevice);
+        velocityShape.StrokeWidth = 2;
+        velocityShape.StartFrom = Position;
+
+        velocityShape.EndAt = new Vector2(Position.X + Velocity.X * 10f, Position.Y + Velocity.Y * 10f); // Scale velocity for better visibility
+        velocityShape.Stroke = Color.Red;
+        VelocityTexture = velocityShape.CreateLineTexture();
     }
 
     internal void InteractPhysic(List<Particle> particles, GameTime gameTime)

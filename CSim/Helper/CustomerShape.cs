@@ -19,7 +19,9 @@ public class CustomerShape
     public int Width { get; set; }
     public int Height { get; set; }
     public Color Stroke { get; set; }
-    public int StrokeWidth { get; internal set; }
+    public int StrokeWidth { get; set; }
+    public Vector2 StartFrom { get; set; }
+    public Vector2 EndAt { get; set; }
 
     public Texture2D CreateCircleTexture()
     {
@@ -51,6 +53,36 @@ public class CustomerShape
 
         texture2D.SetData(colorData);
         return texture2D;
+    }
+
+    internal Texture2D CreateLineTexture()
+    {
+        var length = (EndAt - StartFrom).Length();
+        var texture2D = new Texture2D(_graphicsDevice, Convert.ToInt32(length*2) + StrokeWidth, Convert.ToInt32(length*2) + StrokeWidth);
+        Color[] colorData = new Color[texture2D.Width*texture2D.Height];
+
+        var mindleOfTexture = new Vector2(texture2D.Width / 2, texture2D.Height / 2);
+
+        var startFrom = mindleOfTexture;
+        var endAt = mindleOfTexture + (EndAt - StartFrom);
+
+        var slope = (endAt.Y - startFrom.Y) / (endAt.X - startFrom.X);
+        var intercept = startFrom.Y - slope * startFrom.X;
+        for (int y = 0; y < texture2D.Height; y++)
+        {
+            for (int x = 0; x < texture2D.Width; x++)
+            {
+                var lineY = slope * x + intercept;
+                colorData[GetColorIndex(texture2D.Width, Convert.ToInt32(lineY), x)] = Stroke;
+            }
+        }
+        texture2D.SetData(colorData);
+        return texture2D;
+    }
+
+    private static int GetColorIndex(int width, int y, int x)
+    {
+        return y * width + x;
     }
 
     internal Texture2D CreateRectangleTexture()

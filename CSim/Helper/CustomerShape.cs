@@ -67,15 +67,14 @@ public class CustomerShape
         var endAt = mindleOfTexture + (EndAt - StartFrom);
 
         var slope = (endAt.Y - startFrom.Y) / (endAt.X - startFrom.X);
+        slope = float.IsNaN(slope) ? 0 : slope;
         var intercept = startFrom.Y - slope * startFrom.X;
-        for (int y = 0; y < texture2D.Height; y++)
-        {
             for (int x = 0; x < texture2D.Width; x++)
             {
                 var lineY = slope * x + intercept;
-                colorData[GetColorIndex(texture2D.Width, Convert.ToInt32(lineY), x)] = Stroke;
-            }
-        }
+                var targetIndex = GetColorIndex(texture2D.Width, Convert.ToInt32(lineY), x);
+                colorData[targetIndex] = Stroke;
+            } 
         texture2D.SetData(colorData);
         return texture2D;
     }

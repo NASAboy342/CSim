@@ -13,31 +13,28 @@ public class Boundary : GameObjectBase
         Width = width;
         Height = height;
         _graphicsDeviceManager = graphicsDeviceManager;
-        CreateTexture();
+        UpdateTexture();
     }
 
-    public override void CreateTexture()
+    public override void UpdateTexture()
     {
-        var customerShape = new CustomerShape(_graphicsDeviceManager.GraphicsDevice);
-        customerShape.Origin = Position;
-        customerShape.Width = Convert.ToInt32(Width);
-        customerShape.Height = Convert.ToInt32(Height);
-        customerShape.Fill = Color.Transparent;
-        customerShape.Stroke = Color.White;
-        customerShape.StrokeWidth = 2;
-        var texture = customerShape.CreateRectangleTexture();
-        Texture2D = texture;
+        Texture = new CustomerShape(_graphicsDeviceManager.GraphicsDevice);
+        Texture.Origin = Position;
+        Texture.Width = Convert.ToInt32(Width);
+        Texture.Height = Convert.ToInt32(Height);
+        Texture.Fill = Color.Transparent;
+        Texture.Stroke = Color.White;
+        Texture.StrokeWidth = 2;
+        Texture.X = Position.X;
+        Texture.Y = Position.Y;
+        Texture.CreateRectangleTexture();
     }
 
     public override void Draw(SpriteBatch spriteBatch)
     {
-        if (Texture2D != null)
+        if (Texture != null)
         {
-            spriteBatch.Draw(
-                Texture2D,
-                Position,
-                Color.White
-            );
+            Texture.Draw(spriteBatch);
         }
     }
 

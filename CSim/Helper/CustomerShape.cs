@@ -22,6 +22,10 @@ public class CustomerShape
     public int StrokeWidth { get; set; }
     public Vector2 StartFrom { get; set; }
     public Vector2 EndAt { get; set; }
+    public Texture2D Texture2D { get; set; }
+    public float X { get; set; }
+    public float Y { get; set; }
+    public bool isStartFromCenter { get; set; } = false;
 
     public Texture2D CreateCircleTexture()
     {
@@ -52,14 +56,15 @@ public class CustomerShape
         }
 
         texture2D.SetData(colorData);
+        Texture2D = texture2D;
         return texture2D;
     }
 
     internal Texture2D CreateLineTexture()
     {
         var length = (EndAt - StartFrom).Length();
-        var texture2D = new Texture2D(_graphicsDevice, Convert.ToInt32(length*2) + StrokeWidth, Convert.ToInt32(length*2) + StrokeWidth);
-        Color[] colorData = new Color[texture2D.Width*texture2D.Height];
+        var texture2D = new Texture2D(_graphicsDevice, Convert.ToInt32(length * 2) + StrokeWidth, Convert.ToInt32(length * 2) + StrokeWidth);
+        Color[] colorData = new Color[texture2D.Width * texture2D.Height];
 
         var mindleOfTexture = new Vector2(texture2D.Width / 2, texture2D.Height / 2);
 
@@ -69,13 +74,39 @@ public class CustomerShape
         var slope = (endAt.Y - startFrom.Y) / (endAt.X - startFrom.X);
         slope = float.IsNaN(slope) ? 0 : slope;
         var intercept = startFrom.Y - slope * startFrom.X;
-            for (int x = 0; x < texture2D.Width; x++)
+        var deltaX = endAt.X - startFrom.X;
+        if (deltaX < 0)
+        {
+            for (int x = texture2D.Width / 2; x > deltaX + (texture2D.Width / 2); x--)
             {
                 var lineY = slope * x + intercept;
                 var targetIndex = GetColorIndex(texture2D.Width, Convert.ToInt32(lineY), x);
                 colorData[targetIndex] = Stroke;
-            } 
+            }
+        }
+        else
+        {
+            for (int x = texture2D.Width / 2; x < deltaX + (texture2D.Width / 2); x++)
+            {
+                var lineY = slope * x + intercept;
+                var targetIndex = GetColorIndex(texture2D.Width, Convert.ToInt32(lineY), x);
+                colorData[targetIndex] = Stroke;
+            }
+        }
+        // for (int y = 0; y < texture2D.Height; y++)
+        // {
+        //     for (int x = 0; x < texture2D.Width; x++)
+        //     {
+        //         int index = y * texture2D.Width + x;
+        //         if (x == 0 || x == texture2D.Width - StrokeWidth || y == 0 || y == texture2D.Height - StrokeWidth)
+        //         {
+        //             colorData[index] = Stroke;
+        //         }
+        //     }
+        // }
+
         texture2D.SetData(colorData);
+        Texture2D = texture2D;
         return texture2D;
     }
 
@@ -106,6 +137,21 @@ public class CustomerShape
         }
 
         texture2D.SetData(colorData);
+        Texture2D = texture2D;
         return texture2D;
+    }
+
+    public void Draw(SpriteBatch spriteBatch)
+    {
+        var x = StartFrom.X == 0 ? X : StartFrom.X;
+        var y = StartFrom.Y == 0 ? Y : StartFrom.Y;
+
+        if (isStartFromCenter)
+        {
+            x -= Texture2D.Width / 2;
+            y -= Texture2D.Height / 2;
+        }
+
+        spriteBatch.Draw(Texture2D, new Vector2(x, y), Color.White);
     }
 }

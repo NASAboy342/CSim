@@ -15,7 +15,8 @@ public class Particle : GameObjectBase
         Position = position;
         _graphicsDevice = graphicsDevice;
         _boundary = boundary;
-        CreateTexture();
+        UpdateTexture();
+        CreateVelocityTexture();
     }
     private Boundary _boundary;
     private GraphicsDevice _graphicsDevice;
@@ -25,48 +26,36 @@ public class Particle : GameObjectBase
 
     public Color Color { get; set; } = Color.White;
     public float Mass => Radius * MathF.PI;
-    public Texture2D VelocityTexture { get; set; }
+    public CustomerShape VelocityTexture { get; set; }
     public override void Draw(SpriteBatch spriteBatch)
     {
-        if (Texture2D != null)
+        if (Texture != null)
         {
-            spriteBatch.Draw(
-                Texture2D,
-                new Vector2(Position.X - Radius, Position.Y - Radius),
-                Color
-            );
-
-            spriteBatch.Draw(
-                VelocityTexture,
-                new Vector2(Position.X - Radius, Position.Y - Radius),
-                Color
-            );
+            Texture.Draw(spriteBatch);
+            // VelocityTexture.Draw(spriteBatch);
         }
     }
 
-    public override void CreateTexture()
+    public override void UpdateTexture()
     {
-        // Dispose old texture if it exists
-        Texture2D?.Dispose();
-
-        var circleTexture = new CustomerShape(_graphicsDevice);
-        circleTexture.Radius = Convert.ToInt32(Radius);
-        circleTexture.Fill = Color.White; // Always create white texture, use color tint when drawing
-        Texture2D = circleTexture.CreateCircleTexture();
-
-        CreateVelocityTexture();
+        Texture = new CustomerShape(_graphicsDevice);
+        Texture.Radius = Convert.ToInt32(Radius);
+        Texture.Fill = Color.White; // Always create white texture, use color tint when drawing
+        Texture.X = Position.X;
+        Texture.Y = Position.Y;
+        Texture.isStartFromCenter = true;
+        Texture.CreateCircleTexture();
     }
 
     public void CreateVelocityTexture()
     {
-        VelocityTexture?.Dispose();
-        var velocityShape = new CustomerShape(_graphicsDevice);
-        velocityShape.StrokeWidth = 2;
-        velocityShape.StartFrom = Position;
-
-        velocityShape.EndAt = new Vector2(Position.X + Velocity.X * 10f, Position.Y + Velocity.Y * 10f); // Scale velocity for better visibility
-        velocityShape.Stroke = Color.Red;
-        VelocityTexture = velocityShape.CreateLineTexture();
+        VelocityTexture = new CustomerShape(_graphicsDevice);
+        VelocityTexture.StrokeWidth = 2;
+        VelocityTexture.StartFrom = Position;
+        VelocityTexture.EndAt = new Vector2(Position.X + Velocity.X * 50f, Position.Y + Velocity.Y * 50f); // Scale velocity for better visibility
+        VelocityTexture.Stroke = Color.Red;
+        VelocityTexture.isStartFromCenter = true;
+        VelocityTexture.CreateLineTexture();
     }
 
     internal void InteractPhysic(List<Particle> particles, GameTime gameTime)
@@ -109,7 +98,7 @@ public class Particle : GameObjectBase
 
     private void Move(GameTime gameTime)
     {
-        Position = Vector2.Add(Position, Velocity);
+        Position = Vector2.Add(Position, Velocity * Convert.ToSingle(gameTime.ElapsedGameTime.TotalMilliseconds));
     }
 
     private void FeelCollision(Particle otherParticle, GameTime gameTime)
@@ -127,8 +116,8 @@ public class Particle : GameObjectBase
 
             var velocityDiffForParticle1 = CalculateCollistion(this, otherParticle);
             var velocityDiffForParticle2 = CalculateCollistion(otherParticle, this);
-            this.Velocity -= velocityDiffForParticle1;
-            otherParticle.Velocity -= velocityDiffForParticle2;
+            this.Velocity += velocityDiffForParticle1;
+            otherParticle.Velocity += velocityDiffForParticle2;
 
         }
         else Color = Color.White;
@@ -137,19 +126,21 @@ public class Particle : GameObjectBase
     private Vector2 CalculateCollistion(Particle particle1, Particle particle2)
     {
         var distance = Vector2.Distance(particle1.Position, particle2.Position);
-        // Prevent division by zero
-        var minDistance = 0.1f; // Minimum distance to prevent numerical instability
+        var minDistance = 0.1f;
         if (distance < minDistance)
-        {
             distance = minDistance;
-        }
 
 
         var mass = (2f * particle2.Mass) / (particle1.Mass + particle2.Mass);
-        var velocityDiff = Vector2.Subtract(particle1.Velocity, particle2.Velocity);
-        var positionDiff = Vector2.Subtract(particle1.Position, particle2.Position);
+        var velocityDiff = Vector2.Subtract(particle2.Velocity, particle1.Velocity);
+        var positionDiff = Vector2.Subtract(particle2.Position, particle1.Position);
+        var normalizedPositionDiff = Vector2.Normalize(positionDiff);
 
-        return (mass * ((velocityDiff * positionDiff) / (distance * distance))) * positionDiff;
+        // Calculate the velocity component along the collision normal
+        var velocityAlongNormal = Vector2.Dot(velocityDiff, normalizedPositionDiff);
+        
+        // Impulse is applied only along the collision normal, not tangentially
+        return (mass * velocityAlongNormal) * normalizedPositionDiff;
     }
 
     private bool IsCollided(Particle particle)

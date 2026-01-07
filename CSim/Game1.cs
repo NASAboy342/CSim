@@ -33,26 +33,20 @@ public class Game1 : Game
         var viewHeight = _graphics.PreferredBackBufferHeight;
         _boundary = new Boundary(_graphics, new Vector2(2, 2), _graphics.PreferredBackBufferWidth - 5, _graphics.PreferredBackBufferHeight - 5);
         var random = new Random();
-        for (var i = 0; i < 5; i++)
+        for (var i = 0; i < 50; i++)
         {
-            var newPaticle = new Particle(_particles.Count + 1, _graphics.GraphicsDevice, 30f, new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight))), _boundary);
-            newPaticle.Velocity = new Vector2(CustomeMath.GetFloatBetween(-0.5f, 0.5f), CustomeMath.GetFloatBetween(-0.5f, 0.5f));
+            var newPaticle = new Particle(_particles.Count + 1, _graphics.GraphicsDevice, CustomeMath.GetFloatBetween(5f, 30f), new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight))), _boundary);
+            newPaticle.Velocity = new Vector2(CustomeMath.GetFloatBetween(-1f, 1f), CustomeMath.GetFloatBetween(-1f, 1f));
             _particles.Add(newPaticle);
         }
 
         // var particle1 = new Particle(1, _graphics.GraphicsDevice, 30f, new Vector2(100 , 200), _boundary);
-        // particle1.Velocity = new Vector2(0.5f, 0.6f);
+        // particle1.Velocity = new Vector2(0.5f, 0.5f);
         // var particle2 = new Particle(2, _graphics.GraphicsDevice, 30f, new Vector2(400 , 200), _boundary);
         // particle2.Velocity = new Vector2(-0.4f, 0.5f);
         // _particles.Add(particle1);
         // _particles.Add(particle2);
 
-        // var particle3 = new Particle(1, _graphics.GraphicsDevice, 60f, new Vector2(100 , 700), _boundary);
-        // particle3.Velocity = new Vector2(0.5f, 0);
-        // var particle4 = new Particle(2, _graphics.GraphicsDevice, 30f, new Vector2(700 , 700), _boundary);
-        // particle4.Velocity = new Vector2(-0.5f, 0);
-        // _particles.Add(particle3);
-        // _particles.Add(particle4);
     }
 
     protected override void LoadContent()
@@ -71,6 +65,7 @@ public class Game1 : Game
             foreach (var particle in _particles)
             {
                 particle.InteractPhysic(_particles, gameTime);
+                particle.UpdateTexture();
                 particle.CreateVelocityTexture();
             }
         }
@@ -104,10 +99,10 @@ public class Game1 : Game
             
             foreach (var particle in _particles)
             {
-                if (particle.Texture2D != null && !particle.Texture2D.IsDisposed)
+                if (particle.Texture != null && !particle.Texture.Texture2D.IsDisposed)
                 {
                     particle.Draw(_spriteBatch);
-                    _spriteBatch.DrawString(_ingameFont, particle.Speed.ToString() , new Vector2(particle.Position.X, particle.Position.Y - (particle.Radius * 2)), Color.White);
+                    // _spriteBatch.DrawString(_ingameFont, particle.Speed.ToString() , new Vector2(particle.Position.X, particle.Position.Y - (particle.Radius * 2)), Color.Blue);
                 }
             }
 
@@ -119,7 +114,7 @@ public class Game1 : Game
 
 
 
-
+            _spriteBatch.DrawString(_ingameFont, $"Total valocity: {_particles.Sum(p => p.Speed)}" , new Vector2(10, 10), Color.White);
             _boundary.Draw(_spriteBatch);
             _spriteBatch.End();
         }

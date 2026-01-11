@@ -20,8 +20,8 @@ public class Game1 : Game
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
-        _graphics.PreferredBackBufferWidth = 500;
-        _graphics.PreferredBackBufferHeight = 500;
+        _graphics.PreferredBackBufferWidth = 1000;
+        _graphics.PreferredBackBufferHeight = 1000;
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
     }
@@ -33,10 +33,10 @@ public class Game1 : Game
         var viewHeight = _graphics.PreferredBackBufferHeight;
         _boundary = new Boundary(_graphics, new Vector2(2, 2), _graphics.PreferredBackBufferWidth - 5, _graphics.PreferredBackBufferHeight - 5);
         var random = new Random();
-        for (var i = 0; i < 50; i++)
+        for (var i = 0; i < 100; i++)
         {
-            var newPaticle = new Particle(_particles.Count + 1, _graphics.GraphicsDevice, CustomeMath.GetFloatBetween(5f, 30f), new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight))), _boundary);
-            newPaticle.Velocity = new Vector2(CustomeMath.GetFloatBetween(-1f, 1f), CustomeMath.GetFloatBetween(-1f, 1f));
+            var newPaticle = new Particle(_particles.Count + 1, _graphics.GraphicsDevice, CustomeMath.GetFloatBetween(1f, 5f), new Vector2(Convert.ToSingle(random.Next(0, viewWidth)), Convert.ToSingle(random.Next(0, viewHeight))), _boundary);
+            newPaticle.Velocity = new Vector2(CustomeMath.GetFloatBetween(-0.05f, 0.05f), CustomeMath.GetFloatBetween(-0.05f, 0.05f));
             _particles.Add(newPaticle);
         }
 

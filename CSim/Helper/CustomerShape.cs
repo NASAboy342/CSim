@@ -29,6 +29,10 @@ public class CustomerShape
 
     public Texture2D CreateCircleTexture()
     {
+        if (Texture2D != null)
+        {
+            Texture2D.Dispose();
+        }
         var diameter = Radius * 2 + 1;
         var texture2D = new Texture2D(_graphicsDevice, diameter, diameter);
         Color[] colorData = new Color[diameter * diameter];
@@ -62,6 +66,10 @@ public class CustomerShape
 
     internal Texture2D CreateLineTexture()
     {
+        if (Texture2D != null)
+        {
+            Texture2D.Dispose();
+        }
         var length = (EndAt - StartFrom).Length();
         var texture2D = new Texture2D(_graphicsDevice, Convert.ToInt32(length * 2) + StrokeWidth, Convert.ToInt32(length * 2) + StrokeWidth);
         Color[] colorData = new Color[texture2D.Width * texture2D.Height];
@@ -117,6 +125,10 @@ public class CustomerShape
 
     internal Texture2D CreateRectangleTexture()
     {
+        if (Texture2D != null)
+        {
+            Texture2D.Dispose();
+        }
         var texture2D = new Texture2D(_graphicsDevice, Width, Height);
         Color[] colorData = new Color[Width * Height];
 

@@ -63,7 +63,7 @@ public class Particle : GameObjectBase
         foreach (var particle in particles)
         {
             if (Id == particle.Id) continue;
-            // FeelGravity(particle);
+            FeelGravity(particle);
             FeelCollision(particle, gameTime);
         }
         Move(gameTime);
@@ -116,8 +116,8 @@ public class Particle : GameObjectBase
 
             var velocityDiffForParticle1 = CalculateCollistion(this, otherParticle);
             var velocityDiffForParticle2 = CalculateCollistion(otherParticle, this);
-            this.Velocity += velocityDiffForParticle1;
-            otherParticle.Velocity += velocityDiffForParticle2;
+            this.Velocity += velocityDiffForParticle1 * 0.9f;
+            otherParticle.Velocity += velocityDiffForParticle2 * 0.9f;
 
         }
         else Color = Color.White;
@@ -164,7 +164,7 @@ public class Particle : GameObjectBase
         //(G * m1 * m2) / d²
         // var g = 6.67430e-11f;
         // var g = 6.67430f;
-        var g = 0.0667430f;
+        var g = 0.00667430f;
         var gravityForce = (g * Mass * particle.Mass) / MathF.Pow(distance, 2);
         var speed = gravityForce / Mass;
         Velocity = Velocity + Vector2.Subtract(CustomeMath.GetNewPositionByAngleAndDistance(Position, angleDegree, speed), Position);

@@ -40,7 +40,7 @@ public class Game1 : Game
             _particles.Add(newPaticle);
         }
 
-        // var particle1 = new Particle(1, _graphics.GraphicsDevice, 30f, new Vector2(100 , 200), _boundary);
+        // var particle1 = new Particle(1, _graphics.GraphicsDevice, 1f, new Vector2(100 , 200), _boundary);
         // particle1.Velocity = new Vector2(0.5f, 0.5f);
         // var particle2 = new Particle(2, _graphics.GraphicsDevice, 30f, new Vector2(400 , 200), _boundary);
         // particle2.Velocity = new Vector2(-0.4f, 0.5f);
@@ -64,9 +64,9 @@ public class Game1 : Game
         {
             foreach (var particle in _particles)
             {
-                InteractPhysic(particle, _particles, gameTime);
+                ParticleInteractPhysic(particle, _particles, gameTime);
                 particle.UpdateTexture();
-                particle.CreateVelocityTexture();
+                // particle.UpdateVelocityTexture();
             }
         }
         catch (Exception ex)
@@ -112,7 +112,7 @@ public class Game1 : Game
         base.Draw(gameTime);
     }
 
-    internal void InteractPhysic(Particle thisParticle, List<Particle> particles, GameTime gameTime)
+    internal void ParticleInteractPhysic(Particle thisParticle, List<Particle> particles, GameTime gameTime)
     {
         foreach (var particle in particles)
         {
@@ -121,7 +121,8 @@ public class Game1 : Game
             FeelCollision(thisParticle, particle, gameTime);
         }
         thisParticle.Move(gameTime);
-        thisParticle.Velocity = _boundary.FeelBoundary(thisParticle.Position, thisParticle.Velocity, thisParticle.Radius);
+        // thisParticle.Velocity = _boundary.FeelBoundary(thisParticle.Position, thisParticle.Velocity, thisParticle.Radius);
+        thisParticle.Position = _boundary.Clips(thisParticle.Position);
         CheckMaxVelocity(thisParticle);
         ValidateValuesToPreventCorruption(thisParticle);
     }

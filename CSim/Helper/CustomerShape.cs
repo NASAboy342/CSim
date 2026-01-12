@@ -37,26 +37,39 @@ public class CustomerShape
         var texture2D = new Texture2D(_graphicsDevice, diameter, diameter);
         Color[] colorData = new Color[diameter * diameter];
 
-        for (int y = 0; y < diameter; y++)
+        for(int x = (diameter / 8); x < diameter - (diameter / 8); x++)
         {
-            for (int x = 0; x < diameter; x++)
-            {
-                int index = y * diameter + x;
-                Vector2 pos = new Vector2(x - Radius, y - Radius);
-                if (pos.Length() == Radius)
-                {
-                    colorData[index] = new Color(Fill, 0.5f);
+            var halfDiameter = diameter / 2;
+            var relativeX = x - halfDiameter;
+            var floatRelativeY = MathF.Sqrt((halfDiameter * halfDiameter) - (relativeX * relativeX));
+            var relativeY = Convert.ToInt32(floatRelativeY);
+            var targetIndex = GetColorIndex(diameter, relativeY + halfDiameter, relativeX + halfDiameter);
+            colorData[targetIndex] = Stroke;
+        }
+        for(int x = (diameter / 8); x < diameter - (diameter / 8); x++)
+        {
+            var halfDiameter = diameter / 2;
+            var relativeX = x - halfDiameter;
+            var relativeY = Convert.ToInt32(MathF.Sqrt(halfDiameter * halfDiameter - relativeX * relativeX)) * -1;
+            var targetIndex = GetColorIndex(diameter, relativeY + halfDiameter, relativeX + halfDiameter);
+            colorData[targetIndex] = Stroke;
+        }
 
-                }
-                else if (pos.Length() < Radius)
-                {
-                    colorData[index] = new Color(Fill, 0.5f);
-                }
-                else
-                {
-                    colorData[index] = Color.Transparent;
-                }
-            }
+        for(int y = (diameter / 8); y < diameter - (diameter / 8); y++)
+        {
+            var halfDiameter = diameter / 2;
+            var relativeY = y - halfDiameter;
+            var relativeX = Convert.ToInt32(MathF.Sqrt((halfDiameter * halfDiameter) - (relativeY * relativeY)));
+            var targetIndex = GetColorIndex(diameter, relativeY + halfDiameter, relativeX + halfDiameter);
+            colorData[targetIndex] = Stroke;
+        }
+        for(int y = (diameter / 8); y < diameter - (diameter / 8); y++)
+        {
+            var halfDiameter = diameter / 2;
+            var relativeY = y - halfDiameter;
+            var relativeX = Convert.ToInt32(MathF.Sqrt(halfDiameter * halfDiameter - relativeY * relativeY)) * -1;
+            var targetIndex = GetColorIndex(diameter, relativeY + halfDiameter, relativeX + halfDiameter);
+            colorData[targetIndex] = Stroke;
         }
 
         texture2D.SetData(colorData);

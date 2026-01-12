@@ -16,7 +16,7 @@ public class Particle : GameObjectBase
         _graphicsDevice = graphicsDevice;
         _boundary = boundary;
         UpdateTexture();
-        CreateVelocityTexture();
+        UpdateVelocityTexture();
     }
     private Boundary _boundary;
     private GraphicsDevice _graphicsDevice;
@@ -41,42 +41,32 @@ public class Particle : GameObjectBase
         Texture = new CustomerShape(_graphicsDevice);
         Texture.Radius = Convert.ToInt32(Radius);
         Texture.Fill = Color.White; // Always create white texture, use color tint when drawing
+        Texture.Stroke = Color.White;
         Texture.X = Position.X;
         Texture.Y = Position.Y;
         Texture.isStartFromCenter = true;
         Texture.CreateCircleTexture();
     }
 
-    public void CreateVelocityTexture()
+    public void UpdateVelocityTexture()
     {
         VelocityTexture = new CustomerShape(_graphicsDevice);
         VelocityTexture.StrokeWidth = 2;
         VelocityTexture.StartFrom = Position;
-        VelocityTexture.EndAt = new Vector2(Position.X + Velocity.X * 50f, Position.Y + Velocity.Y * 50f); // Scale velocity for better visibility
+        VelocityTexture.EndAt = new Vector2(Position.X + Velocity.X * 100f, Position.Y + Velocity.Y * 100f); // Scale velocity for better visibility
         VelocityTexture.Stroke = Color.Red;
         VelocityTexture.isStartFromCenter = true;
         VelocityTexture.CreateLineTexture();
     }
 
-    
-
-    
-
-    
-
     public void Move(GameTime gameTime)
     {
         Position = Vector2.Add(Position, Velocity * Convert.ToSingle(gameTime.ElapsedGameTime.TotalMilliseconds));
     }
-
-    
-
     
     public bool IsCollided(Particle particle)
     {
         var distance = Vector2.Distance(Position, particle.Position);
         return distance <= Radius + particle.Radius;
     }
-
-    
 }

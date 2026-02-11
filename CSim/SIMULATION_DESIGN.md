@@ -295,3 +295,19 @@ Short-term concrete tasks to start implementing this design:
 5. Start wiring up a small subset of god powers (spawn life, lightning) to confirm the core sandbox feel.
 
 This document will evolve as the implementation grows and as we adjust scope based on performance and gameplay feel.
+
+---
+
+## 7. Implementation Progress Log
+
+- **Step 1 – Basic world and units (2026-02-11)**  
+  - Added `WorldManager` and `WorldTile` with simple height-based terrain (water/grass/mountain).  
+  - Implemented `WorldRenderer` to draw the tile grid.  
+  - Introduced `Entity` and `EntityRenderer`; left-click spawns basic units.  
+  - Wired everything into `Game1`'s `Initialize`, `LoadContent`, `Update`, and `Draw`.
+
+- **Step 2 – Races, towns, and spawning (2026-02-11)**  
+  - Extended `Entity` with `RaceType` and race-colored rendering.  
+  - Added `Town`, `TownManager`, and `TownRenderer`; right-click on grass tiles founds towns of the selected race.  
+  - Added `InputManager` support for right-clicks and numeric keys (1–4) to select race.  
+  - Implemented simple town population growth and periodic settler spawning: towns periodically create new units of their race at the town position.

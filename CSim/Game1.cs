@@ -102,6 +102,14 @@ public class Game1 : Game
         _worldManager.Update(gameTime);
         _townManager.Update(gameTime);
 
+        foreach (var town in _townManager.Towns)
+        {
+            if (town.TryDequeueSpawnPosition(out var spawnPosition))
+            {
+                _entities.Add(new Entity(spawnPosition, town.Race));
+            }
+        }
+
         foreach (var entity in _entities)
         {
             entity.Update(gameTime);

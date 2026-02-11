@@ -19,8 +19,17 @@ public sealed class EntityRenderer
     {
         foreach (var entity in entities)
         {
+            var color = entity.Race switch
+            {
+                RaceType.Human => Color.Yellow,
+                RaceType.Orc => new Color(0, 170, 0),
+                RaceType.Elf => new Color(120, 255, 120),
+                RaceType.Dwarf => new Color(200, 160, 80),
+                _ => Color.White
+            };
+
             var rect = new Rectangle((int)entity.Position.X - 3, (int)entity.Position.Y - 3, 6, 6);
-            spriteBatch.Draw(_pixel, rect, Color.Yellow);
+            spriteBatch.Draw(_pixel, rect, color);
         }
     }
 }

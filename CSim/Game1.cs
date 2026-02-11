@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using CSim.Civilizations;
 using CSim.Entities;
 using CSim.Input;
 using CSim.Rendering;
@@ -21,6 +22,11 @@ public class Game1 : Game
     private EntityRenderer _entityRenderer;
     private InputManager _inputManager = null!;
 
+    private TownManager _townManager = null!;
+    private TownRenderer _townRenderer = null!;
+
+    private RaceType _currentRace = RaceType.Human;
+
     private const int TileSize = 8;
 
     public Game1()
@@ -41,6 +47,7 @@ public class Game1 : Game
 
         _worldManager = new WorldManager(tilesX, tilesY);
         _inputManager = new InputManager();
+        _townManager = new TownManager();
 
         base.Initialize();
     }
@@ -51,6 +58,7 @@ public class Game1 : Game
 
         _worldRenderer = new WorldRenderer(_worldManager, GraphicsDevice, TileSize);
         _entityRenderer = new EntityRenderer(GraphicsDevice);
+        _townRenderer = new TownRenderer(GraphicsDevice);
 
     }
 
@@ -63,12 +71,36 @@ public class Game1 : Game
 
         _inputManager.Update();
 
+        var keyboard = Keyboard.GetState();
+        if (keyboard.IsKeyDown(Keys.D1)) _currentRace = RaceType.Human;
+        if (keyboard.IsKeyDown(Keys.D2)) _currentRace = RaceType.Orc;
+        if (keyboard.IsKeyDown(Keys.D3)) _currentRace = RaceType.Elf;
+        if (keyboard.IsKeyDown(Keys.D4)) _currentRace = RaceType.Dwarf;
+
         if (_inputManager.LeftClicked)
         {
-            _entities.Add(new Entity(_inputManager.MousePosition.ToVector2()));
+            _entities.Add(new Entity(_inputManager.MousePosition.ToVector2(), _currentRace));
+        }
+
+        if (_inputManager.RightClicked)
+        {
+            var tileX = _inputManager.MousePosition.X / TileSize;
+            var tileY = _inputManager.MousePosition.Y / TileSize;
+
+            if (tileX >= 0 && tileX < _worldManager.Width && tileY >= 0 && tileY < _worldManager.Height)
+            {
+                var tile = _worldManager.Tiles[tileX, tileY];
+                if (tile.Terrain == TerrainType.Grass)
+                {
+                    var townPos = new Vector2((tileX + 0.5f) * TileSize, (tileY + 0.5f) * TileSize);
+                    var town = new Town(townPos, _currentRace, initialPopulation: 5);
+                    _townManager.AddTown(town);
+                }
+            }
         }
 
         _worldManager.Update(gameTime);
+        _townManager.Update(gameTime);
 
         foreach (var entity in _entities)
         {
@@ -84,6 +116,7 @@ public class Game1 : Game
 
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         _worldRenderer.Draw(_spriteBatch);
+        _townRenderer.Draw(_spriteBatch, _townManager);
         _entityRenderer.Draw(_spriteBatch, _entities);
         _spriteBatch.End();
 

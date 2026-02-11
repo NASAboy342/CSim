@@ -315,3 +315,8 @@ This document will evolve as the implementation grows and as we adjust scope bas
 - **Step 3 – Basic unit wandering (2026-02-11)**  
   - Gave `Entity` a simple wandering AI: entities periodically pick a random direction and move at a constant speed.  
   - Clamped entity positions to the backbuffer so units remain within the visible world area.  
+ 
+- **Step 4 – Minimal HUD (2026-02-11)**  
+  - Added a `Fonts/Default.spritefont` asset and registered it in `Content.mgcb`.  
+  - Introduced `Hud` in the `UI` namespace and wired it into `Game1.Draw`.  
+  - HUD displays current race, number of towns, number of units, and a short summary of controls.  

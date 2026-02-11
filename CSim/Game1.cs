@@ -3,6 +3,7 @@ using CSim.Civilizations;
 using CSim.Entities;
 using CSim.Input;
 using CSim.Rendering;
+using CSim.UI;
 using CSim.World;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -26,6 +27,8 @@ public class Game1 : Game
     private TownRenderer _townRenderer = null!;
 
     private RaceType _currentRace = RaceType.Human;
+
+    private Hud _hud = null!;
 
     private const int TileSize = 8;
 
@@ -59,6 +62,9 @@ public class Game1 : Game
         _worldRenderer = new WorldRenderer(_worldManager, GraphicsDevice, TileSize);
         _entityRenderer = new EntityRenderer(GraphicsDevice);
         _townRenderer = new TownRenderer(GraphicsDevice);
+
+        var font = Content.Load<SpriteFont>("Fonts/Default");
+        _hud = new Hud(font);
 
     }
 
@@ -130,6 +136,7 @@ public class Game1 : Game
         _worldRenderer.Draw(_spriteBatch);
         _townRenderer.Draw(_spriteBatch, _townManager);
         _entityRenderer.Draw(_spriteBatch, _entities);
+        _hud.Draw(_spriteBatch, _currentRace, _townManager, _entities.Count);
         _spriteBatch.End();
 
         base.Draw(gameTime);

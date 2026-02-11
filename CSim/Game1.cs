@@ -126,7 +126,7 @@ public class Game1 : Game
                     var townPos = new Vector2((tileX + 0.5f) * TileSize, (tileY + 0.5f) * TileSize);
                     var town = new Town(townPos, _currentRace, initialPopulation: 5);
                     _townManager.AddTown(town);
-                    _kingdomManager.AddKingdomForTown(town);
+                    _kingdomManager.AssignTownToKingdom(town);
                 }
             }
         }

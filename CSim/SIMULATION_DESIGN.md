@@ -334,3 +334,7 @@ This document will evolve as the implementation grows and as we adjust scope bas
 - **Step 7 – Minimal kingdoms (2026-02-11)**  
   - Introduced `Kingdom` and `KingdomManager` to group towns into simple kingdoms. Each founded town currently creates its own kingdom.  
   - `Game1` now creates a kingdom whenever a town is founded and HUD displays the total kingdom count alongside towns and units.  
+ 
+- **Step 8 – Shared kingdoms by proximity (2026-02-11)**  
+  - Updated `KingdomManager` so that new towns join the nearest same-race kingdom within a certain world-radius, instead of always forming a new kingdom.  
+  - When no nearby same-race kingdom exists, a new kingdom is still created; HUD kingdom count now better reflects clustered civilizations rather than one-kingdom-per-town.  

@@ -1,6 +1,7 @@
 using System.Text;
 using CSim.Civilizations;
 using CSim.Entities;
+using CSim.Powers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -15,17 +16,19 @@ public sealed class Hud
         _font = font;
     }
 
-    public void Draw(SpriteBatch spriteBatch, RaceType currentRace, TownManager townManager, int entityCount)
+    public void Draw(SpriteBatch spriteBatch, RaceType currentRace, TownManager townManager, int entityCount, ToolMode toolMode)
     {
         var sb = new StringBuilder();
         sb.Append("Race: ");
         sb.Append(currentRace);
+        sb.Append("  Tool: ");
+        sb.Append(toolMode);
         sb.Append("  Towns: ");
         sb.Append(townManager.Towns.Count);
         sb.Append("  Units: ");
         sb.Append(entityCount);
         sb.AppendLine();
-        sb.Append("Controls: 1-4 select race, LMB spawn unit, RMB found town, Esc quit");
+        sb.Append("Controls: 1-4 race, Z spawn, X raise, C lower, V lightning, LMB apply tool, RMB found town (spawn), Esc quit");
 
         var text = sb.ToString();
 
@@ -36,3 +39,4 @@ public sealed class Hud
         spriteBatch.DrawString(_font, text, textPos, Color.White);
     }
 }
+

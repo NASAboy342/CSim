@@ -320,3 +320,8 @@ This document will evolve as the implementation grows and as we adjust scope bas
   - Added a `Fonts/Default.spritefont` asset and registered it in `Content.mgcb`.  
   - Introduced `Hud` in the `UI` namespace and wired it into `Game1.Draw`.  
   - HUD displays current race, number of towns, number of units, and a short summary of controls.  
+ 
+- **Step 5 – Basic god tools (2026-02-11)**  
+  - Added `ToolMode` enum and simple tool switching (Z/X/C/V) for Spawn, RaiseLand, LowerLand, and Lightning.  
+  - Left-click now applies the current tool: spawning units, raising/lowering terrain tiles, or destroying nearby units with a lightning strike.  
+  - Right-click to found towns is restricted to Spawn mode to avoid conflicts with other tools.  

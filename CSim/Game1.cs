@@ -2,6 +2,7 @@
 using CSim.Civilizations;
 using CSim.Entities;
 using CSim.Input;
+using CSim.Powers;
 using CSim.Rendering;
 using CSim.UI;
 using CSim.World;
@@ -29,6 +30,8 @@ public class Game1 : Game
     private RaceType _currentRace = RaceType.Human;
 
     private Hud _hud = null!;
+
+    private ToolMode _toolMode = ToolMode.Spawn;
 
     private const int TileSize = 8;
 
@@ -83,12 +86,31 @@ public class Game1 : Game
         if (keyboard.IsKeyDown(Keys.D3)) _currentRace = RaceType.Elf;
         if (keyboard.IsKeyDown(Keys.D4)) _currentRace = RaceType.Dwarf;
 
+        if (keyboard.IsKeyDown(Keys.Z)) _toolMode = ToolMode.Spawn;
+        if (keyboard.IsKeyDown(Keys.X)) _toolMode = ToolMode.RaiseLand;
+        if (keyboard.IsKeyDown(Keys.C)) _toolMode = ToolMode.LowerLand;
+        if (keyboard.IsKeyDown(Keys.V)) _toolMode = ToolMode.Lightning;
+
         if (_inputManager.LeftClicked)
         {
-            _entities.Add(new Entity(_inputManager.MousePosition.ToVector2(), _currentRace));
+            switch (_toolMode)
+            {
+                case ToolMode.Spawn:
+                    _entities.Add(new Entity(_inputManager.MousePosition.ToVector2(), _currentRace));
+                    break;
+                case ToolMode.RaiseLand:
+                    ApplyRaiseLowerLand(_inputManager.MousePosition, true);
+                    break;
+                case ToolMode.LowerLand:
+                    ApplyRaiseLowerLand(_inputManager.MousePosition, false);
+                    break;
+                case ToolMode.Lightning:
+                    ApplyLightning(_inputManager.MousePosition.ToVector2());
+                    break;
+            }
         }
 
-        if (_inputManager.RightClicked)
+        if (_inputManager.RightClicked && _toolMode == ToolMode.Spawn)
         {
             var tileX = _inputManager.MousePosition.X / TileSize;
             var tileY = _inputManager.MousePosition.Y / TileSize;
@@ -136,9 +158,50 @@ public class Game1 : Game
         _worldRenderer.Draw(_spriteBatch);
         _townRenderer.Draw(_spriteBatch, _townManager);
         _entityRenderer.Draw(_spriteBatch, _entities);
-        _hud.Draw(_spriteBatch, _currentRace, _townManager, _entities.Count);
+        _hud.Draw(_spriteBatch, _currentRace, _townManager, _entities.Count, _toolMode);
         _spriteBatch.End();
 
         base.Draw(gameTime);
     }
+
+    private void ApplyRaiseLowerLand(Point mousePosition, bool raise)
+    {
+        var tileX = mousePosition.X / TileSize;
+        var tileY = mousePosition.Y / TileSize;
+
+        if (tileX < 0 || tileX >= _worldManager.Width || tileY < 0 || tileY >= _worldManager.Height)
+        {
+            return;
+        }
+
+        var tile = _worldManager.Tiles[tileX, tileY];
+
+        if (raise)
+        {
+            tile.Terrain = tile.Terrain switch
+            {
+                TerrainType.Water => TerrainType.Grass,
+                TerrainType.Grass => TerrainType.Mountain,
+                _ => tile.Terrain
+            };
+        }
+        else
+        {
+            tile.Terrain = tile.Terrain switch
+            {
+                TerrainType.Mountain => TerrainType.Grass,
+                TerrainType.Grass => TerrainType.Water,
+                _ => tile.Terrain
+            };
+        }
+    }
+
+    private void ApplyLightning(Vector2 position)
+    {
+        const float radius = 24f;
+        var radiusSq = radius * radius;
+
+        _entities.RemoveAll(e => Vector2.DistanceSquared(e.Position, position) <= radiusSq);
+    }
 }
+

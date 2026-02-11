@@ -27,6 +27,8 @@ public class Game1 : Game
     private TownManager _townManager = null!;
     private TownRenderer _townRenderer = null!;
 
+    private KingdomManager _kingdomManager = null!;
+
     private RaceType _currentRace = RaceType.Human;
 
     private Hud _hud = null!;
@@ -54,6 +56,7 @@ public class Game1 : Game
         _worldManager = new WorldManager(tilesX, tilesY);
         _inputManager = new InputManager();
         _townManager = new TownManager();
+        _kingdomManager = new KingdomManager();
 
         base.Initialize();
     }
@@ -123,6 +126,7 @@ public class Game1 : Game
                     var townPos = new Vector2((tileX + 0.5f) * TileSize, (tileY + 0.5f) * TileSize);
                     var town = new Town(townPos, _currentRace, initialPopulation: 5);
                     _townManager.AddTown(town);
+                    _kingdomManager.AddKingdomForTown(town);
                 }
             }
         }
@@ -160,7 +164,7 @@ public class Game1 : Game
         _worldRenderer.Draw(_spriteBatch);
         _townRenderer.Draw(_spriteBatch, _townManager);
         _entityRenderer.Draw(_spriteBatch, _entities);
-        _hud.Draw(_spriteBatch, _currentRace, _townManager, _entities.Count, _toolMode);
+        _hud.Draw(_spriteBatch, _currentRace, _townManager, _entities.Count, _toolMode, _kingdomManager.Kingdoms.Count);
         _spriteBatch.End();
 
         base.Draw(gameTime);

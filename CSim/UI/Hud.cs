@@ -16,13 +16,15 @@ public sealed class Hud
         _font = font;
     }
 
-    public void Draw(SpriteBatch spriteBatch, RaceType currentRace, TownManager townManager, int entityCount, ToolMode toolMode)
+    public void Draw(SpriteBatch spriteBatch, RaceType currentRace, TownManager townManager, int entityCount, ToolMode toolMode, int kingdomCount)
     {
         var sb = new StringBuilder();
         sb.Append("Race: ");
         sb.Append(currentRace);
         sb.Append("  Tool: ");
         sb.Append(toolMode);
+        sb.Append("  Kingdoms: ");
+        sb.Append(kingdomCount);
         sb.Append("  Towns: ");
         sb.Append(townManager.Towns.Count);
         sb.Append("  Units: ");

@@ -330,3 +330,7 @@ This document will evolve as the implementation grows and as we adjust scope bas
   - Extended `Entity` with basic `Health` and `Damage` stats plus an `ApplyDamage` helper.  
   - Added a `ResolveCombat` step in `Game1.Update` that makes nearby units of different races deal damage to each other when within a small radius.  
   - Entities whose health reaches zero or below are removed from the world, allowing battles between races to naturally thin out units.  
+ 
+- **Step 7 – Minimal kingdoms (2026-02-11)**  
+  - Introduced `Kingdom` and `KingdomManager` to group towns into simple kingdoms. Each founded town currently creates its own kingdom.  
+  - `Game1` now creates a kingdom whenever a town is founded and HUD displays the total kingdom count alongside towns and units.  

@@ -113,6 +113,10 @@ public class Game1 : Game
         foreach (var entity in _entities)
         {
             entity.Update(gameTime);
+            entity.Position = Vector2.Clamp(
+                entity.Position,
+                Vector2.Zero,
+                new Vector2(_graphics.PreferredBackBufferWidth - 1, _graphics.PreferredBackBufferHeight - 1));
         }
 
         base.Update(gameTime);

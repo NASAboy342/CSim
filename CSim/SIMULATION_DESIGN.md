@@ -311,3 +311,7 @@ This document will evolve as the implementation grows and as we adjust scope bas
   - Added `Town`, `TownManager`, and `TownRenderer`; right-click on grass tiles founds towns of the selected race.  
   - Added `InputManager` support for right-clicks and numeric keys (1–4) to select race.  
   - Implemented simple town population growth and periodic settler spawning: towns periodically create new units of their race at the town position.
+ 
+- **Step 3 – Basic unit wandering (2026-02-11)**  
+  - Gave `Entity` a simple wandering AI: entities periodically pick a random direction and move at a constant speed.  
+  - Clamped entity positions to the backbuffer so units remain within the visible world area.  

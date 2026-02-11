@@ -325,3 +325,8 @@ This document will evolve as the implementation grows and as we adjust scope bas
   - Added `ToolMode` enum and simple tool switching (Z/X/C/V) for Spawn, RaiseLand, LowerLand, and Lightning.  
   - Left-click now applies the current tool: spawning units, raising/lowering terrain tiles, or destroying nearby units with a lightning strike.  
   - Right-click to found towns is restricted to Spawn mode to avoid conflicts with other tools.  
+ 
+- **Step 6 – Simple cross-race combat (2026-02-11)**  
+  - Extended `Entity` with basic `Health` and `Damage` stats plus an `ApplyDamage` helper.  
+  - Added a `ResolveCombat` step in `Game1.Update` that makes nearby units of different races deal damage to each other when within a small radius.  
+  - Entities whose health reaches zero or below are removed from the world, allowing battles between races to naturally thin out units.  

@@ -19,6 +19,9 @@ public sealed class Entity
 
     public RaceType Race { get; }
 
+    public float Health { get; private set; } = 10f;
+    public float Damage { get; private set; } = 4f;
+
     private static readonly Random Random = new();
     private Vector2 _velocity;
     private float _directionTimer;
@@ -43,6 +46,11 @@ public sealed class Entity
         }
 
         Position += _velocity * Speed * delta;
+    }
+
+    public void ApplyDamage(float amount)
+    {
+        Health -= amount;
     }
 
     private void PickNewDirection()

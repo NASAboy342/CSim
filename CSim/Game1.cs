@@ -138,6 +138,8 @@ public class Game1 : Game
             }
         }
 
+        ResolveCombat();
+
         foreach (var entity in _entities)
         {
             entity.Update(gameTime);
@@ -202,6 +204,34 @@ public class Game1 : Game
         var radiusSq = radius * radius;
 
         _entities.RemoveAll(e => Vector2.DistanceSquared(e.Position, position) <= radiusSq);
+    }
+
+    private void ResolveCombat()
+    {
+        const float attackRadius = 8f;
+        var attackRadiusSq = attackRadius * attackRadius;
+
+        for (var i = 0; i < _entities.Count; i++)
+        {
+            var a = _entities[i];
+            for (var j = i + 1; j < _entities.Count; j++)
+            {
+                var b = _entities[j];
+
+                if (a.Race == b.Race)
+                {
+                    continue;
+                }
+
+                if (Vector2.DistanceSquared(a.Position, b.Position) <= attackRadiusSq)
+                {
+                    a.ApplyDamage(b.Damage);
+                    b.ApplyDamage(a.Damage);
+                }
+            }
+        }
+
+        _entities.RemoveAll(e => e.Health <= 0f);
     }
 }
 

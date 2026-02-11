@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using CSim.Civilizations;
 using CSim.Entities;
 using CSim.Input;
@@ -34,6 +35,8 @@ public class Game1 : Game
     private Hud _hud = null!;
 
     private ToolMode _toolMode = ToolMode.Spawn;
+
+    private readonly Random _random = new();
 
     private const int TileSize = 8;
 
@@ -134,11 +137,25 @@ public class Game1 : Game
         _worldManager.Update(gameTime);
         _townManager.Update(gameTime);
 
-        foreach (var town in _townManager.Towns)
+        // Use index-based loops with a cached count so new towns
+        // added during this frame don't invalidate enumeration.
+        var townCount = _townManager.Towns.Count;
+        for (var i = 0; i < townCount; i++)
         {
+            var town = _townManager.Towns[i];
             if (town.TryDequeueSpawnPosition(out var spawnPosition))
             {
                 _entities.Add(new Entity(spawnPosition, town.Race));
+            }
+        }
+
+        townCount = _townManager.Towns.Count;
+        for (var i = 0; i < townCount; i++)
+        {
+            var town = _townManager.Towns[i];
+            if (town.TryDequeueColonizationRequest(out var basePosition))
+            {
+                TryFoundColonyNear(town, basePosition);
             }
         }
 
@@ -236,6 +253,43 @@ public class Game1 : Game
         }
 
         _entities.RemoveAll(e => e.Health <= 0f);
+    }
+
+    private void TryFoundColonyNear(Town parentTown, Vector2 basePosition)
+    {
+        const int attempts = 8;
+        const float minDistance = 80f;
+        const float maxDistance = 200f;
+
+        for (var i = 0; i < attempts; i++)
+        {
+            var angle = (float)(_random.NextDouble() * Math.PI * 2.0);
+            var t = (float)_random.NextDouble();
+            var distance = minDistance + t * (maxDistance - minDistance);
+
+            var offset = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * distance;
+            var worldPos = basePosition + offset;
+
+            var tileX = (int)(worldPos.X / TileSize);
+            var tileY = (int)(worldPos.Y / TileSize);
+
+            if (tileX < 0 || tileX >= _worldManager.Width || tileY < 0 || tileY >= _worldManager.Height)
+            {
+                continue;
+            }
+
+            var tile = _worldManager.Tiles[tileX, tileY];
+            if (tile.Terrain != TerrainType.Grass)
+            {
+                continue;
+            }
+
+            var townPos = new Vector2((tileX + 0.5f) * TileSize, (tileY + 0.5f) * TileSize);
+            var town = new Town(townPos, parentTown.Race, initialPopulation: 4);
+            _townManager.AddTown(town);
+            _kingdomManager.AssignTownToKingdom(town);
+            return;
+        }
     }
 }
 

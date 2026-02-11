@@ -338,3 +338,12 @@ This document will evolve as the implementation grows and as we adjust scope bas
 - **Step 8 – Shared kingdoms by proximity (2026-02-11)**  
   - Updated `KingdomManager` so that new towns join the nearest same-race kingdom within a certain world-radius, instead of always forming a new kingdom.  
   - When no nearby same-race kingdom exists, a new kingdom is still created; HUD kingdom count now better reflects clustered civilizations rather than one-kingdom-per-town.  
+ 
+- **Step 9 – Simple kingdom expansion (2026-02-11)**  
+  - Extended `Town` with a colonization timer and threshold so high-population towns periodically request to found colonies.  
+  - `Game1` now responds to colonization requests by attempting to place new towns on nearby grass tiles at a random direction and distance, assigning them to the same kingdom.  
+  - Result: kingdoms can slowly spread across the map as their core towns grow, without direct player input.  
+ 
+- **Step 10 – Fix town list modification during iteration (2026-02-11)**  
+  - Changed `Game1.Update` to iterate over towns using index-based loops with cached counts when processing spawn and colonization queues.  
+  - This prevents `InvalidOperationException` errors caused by adding towns to the underlying list while it was being iterated.  

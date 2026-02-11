@@ -19,6 +19,11 @@ public sealed class Town
 
     private bool _spawnQueued;
 
+    private float _colonizationTimer;
+    private const float ColonizationIntervalSeconds = 25f;
+    private const int MinPopulationToColonize = 12;
+    private bool _colonizationQueued;
+
     public Town(Vector2 position, RaceType race, int initialPopulation)
     {
         Position = position;
@@ -32,6 +37,7 @@ public sealed class Town
 
         _populationTimer += delta;
         _spawnTimer += delta;
+        _colonizationTimer += delta;
 
         if (_populationTimer >= PopulationGrowSeconds)
         {
@@ -44,6 +50,12 @@ public sealed class Town
             _spawnTimer -= SpawnIntervalSeconds;
             _spawnQueued = true;
         }
+
+        if (Population >= MinPopulationToColonize && _colonizationTimer >= ColonizationIntervalSeconds)
+        {
+            _colonizationTimer -= ColonizationIntervalSeconds;
+            _colonizationQueued = true;
+        }
     }
 
     public bool TryDequeueSpawnPosition(out Vector2 position)
@@ -51,6 +63,19 @@ public sealed class Town
         if (_spawnQueued)
         {
             _spawnQueued = false;
+            position = Position;
+            return true;
+        }
+
+        position = Vector2.Zero;
+        return false;
+    }
+
+    public bool TryDequeueColonizationRequest(out Vector2 position)
+    {
+        if (_colonizationQueued)
+        {
+            _colonizationQueued = false;
             position = Position;
             return true;
         }

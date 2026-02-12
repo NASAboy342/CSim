@@ -375,3 +375,8 @@ This document will evolve as the implementation grows and as we adjust scope bas
   - Extended `Entity` with simple carrying state so units can hold a specific resource type and amount while walking between resource tiles and towns.  
   - Reworked gathering logic so resources are only added to town storage when a carrying unit returns to town and deposits them, rather than being magically converted at a distance.  
   - Updated `EntityRenderer` to draw a darker inset square over units that are currently carrying resources, making haulers visually stand out on the map.
+ 
+- **Step 16 – Town construction by units (2026-02-12)**  
+  - Added a `SettlementSite` concept so colonization now creates a build site instead of an instant new town. Sites track required build progress and are rendered as special markers on the map.  
+  - When a town requests colonization, a few builder units are spawned; they pick up construction materials from town storage and physically walk to the settlement site, contributing build progress when they arrive.  
+  - Once enough construction work has been delivered to a site, it is converted into a real town and added to the appropriate kingdom, so new settlements now visibly emerge from unit activity rather than popping into existence.

@@ -58,6 +58,8 @@ public class Game1 : Game
     private readonly List<ToolButton> _toolButtons = new();
     private readonly List<RaceButton> _raceButtons = new();
 
+    private readonly List<SettlementSite> _settlementSites = new();
+
     private Town? _selectedTown;
     private Entity? _selectedEntity;
 
@@ -197,13 +199,28 @@ public class Game1 : Game
             var town = _townManager.Towns[i];
             if (town.TryDequeueColonizationRequest(out var basePosition))
             {
-                TryFoundColonyNear(town, basePosition);
+                TryCreateSettlementSiteNear(town, basePosition);
             }
         }
 
         ResolveCombat();
 
         UpdateEntityBehaviors(gameTime);
+
+        // Convert completed settlement sites into fully founded towns.
+        for (var i = _settlementSites.Count - 1; i >= 0; i--)
+        {
+            var site = _settlementSites[i];
+            if (!site.IsComplete)
+            {
+                continue;
+            }
+
+            var newTown = new Town(site.Position, site.Race, initialPopulation: 4);
+            _townManager.AddTown(newTown);
+            _kingdomManager.AssignTownToKingdom(newTown);
+            _settlementSites.RemoveAt(i);
+        }
 
         base.Update(gameTime);
     }
@@ -215,6 +232,7 @@ public class Game1 : Game
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         _worldRenderer.Draw(_spriteBatch);
         _townRenderer.Draw(_spriteBatch, _townManager);
+        DrawSettlementSites();
         _entityRenderer.Draw(_spriteBatch, _entities);
         DrawRaceBar();
         DrawToolbar();
@@ -356,7 +374,7 @@ public class Game1 : Game
         _selectedEntity = bestEntity;
     }
 
-    private void TryFoundColonyNear(Town parentTown, Vector2 basePosition)
+    private void TryCreateSettlementSiteNear(Town parentTown, Vector2 basePosition)
     {
         const int attempts = 8;
         const float minDistance = 80f;
@@ -386,9 +404,10 @@ public class Game1 : Game
             }
 
             var townPos = new Vector2((tileX + 0.5f) * TileSize, (tileY + 0.5f) * TileSize);
-            var town = new Town(townPos, parentTown.Race, initialPopulation: 4);
-            _townManager.AddTown(town);
-            _kingdomManager.AssignTownToKingdom(town);
+            var site = new SettlementSite(townPos, parentTown.Race);
+            _settlementSites.Add(site);
+
+            SpawnBuildersForSettlement(parentTown, site, 3);
             return;
         }
     }
@@ -417,6 +436,24 @@ public class Game1 : Game
         for (var i = 0; i < _entities.Count; i++)
         {
             var entity = _entities[i];
+
+            SettlementSite? nearestSite = null;
+            var nearestSiteDistSq = float.MaxValue;
+
+            foreach (var site in _settlementSites)
+            {
+                if (site.Race != entity.Race || site.IsComplete)
+                {
+                    continue;
+                }
+
+                var distSqToSite = Vector2.DistanceSquared(entity.Position, site.Position);
+                if (distSqToSite < nearestSiteDistSq)
+                {
+                    nearestSiteDistSq = distSqToSite;
+                    nearestSite = site;
+                }
+            }
 
             Entity? nearestEnemy = null;
             var nearestEnemyDistSq = visionRadiusSq;
@@ -504,11 +541,31 @@ public class Game1 : Game
 
             // Gathering and hauling: if safe and near a friendly town, units will
             // walk out to resource tiles, pick up resources, then walk back and
-            // deposit them into town storage.
+            // deposit them into town storage. Some units may instead haul
+            // construction materials from town to nearby settlement sites.
             if (nearestFriendlyTown != null && nearestEnemy == null)
             {
-                // Deposit if carrying and close enough to town.
-                if (entity.IsCarryingResource)
+                // If carrying construction materials, prioritize heading to a
+                // settlement site and contributing progress there.
+                if (entity.IsCarryingResource && entity.CarryingForConstruction && nearestSite != null)
+                {
+                    if (nearestSiteDistSq <= healRadiusSq && entity.CanDoResourceAction)
+                    {
+                        var amount = entity.DropResource();
+                        if (amount > 0)
+                        {
+                            nearestSite.AddBuildUnits(amount);
+                            entity.OnResourceAction(2f);
+                        }
+                    }
+                    else
+                    {
+                        var toSite = nearestSite.Position - entity.Position;
+                        entity.SetDirectedMovement(toSite, chaseDuration * 2f);
+                    }
+                }
+                // Deposit harvested resources back into the town.
+                else if (entity.IsCarryingResource)
                 {
                     if (nearestTownDistSq <= healRadiusSq && entity.CanDoResourceAction)
                     {
@@ -529,38 +586,68 @@ public class Game1 : Game
                 }
                 else if (entity.CanDoResourceAction)
                 {
-                    var tileX = (int)(entity.Position.X / TileSize);
-                    var tileY = (int)(entity.Position.Y / TileSize);
-
-                    var onResource = false;
-                    if (tileX >= 0 && tileX < _worldManager.Width && tileY >= 0 && tileY < _worldManager.Height)
+                    // If there is a nearby settlement site and we are close to the town,
+                    // pick up some construction material from town storage and walk it out.
+                    if (nearestSite != null && nearestTownDistSq <= healRadiusSq && nearestFriendlyTown.Food + nearestFriendlyTown.Wood + nearestFriendlyTown.Stone > 0)
                     {
-                        var tile = _worldManager.Tiles[tileX, tileY];
-                        if (tile.Resource != ResourceType.None && tile.ResourceAmount > 0)
+                        if (entity.TryPickUpConstruction(ResourceType.Rock, 1))
                         {
-                            // Pick up from the current tile.
-                            if (entity.TryPickUpResource(tile.Resource, 1))
+                            // Consume a generic unit of material; we don't distinguish
+                            // types here for simplicity.
+                            if (nearestFriendlyTown.Wood > 0)
                             {
-                                tile.ResourceAmount -= 1;
-                                if (tile.ResourceAmount <= 0)
-                                {
-                                    tile.Resource = ResourceType.None;
-                                }
-
-                                entity.OnResourceAction(3f);
-                                onResource = true;
+                                nearestFriendlyTown.ConsumeWood(1);
                             }
+                            else if (nearestFriendlyTown.Stone > 0)
+                            {
+                                nearestFriendlyTown.ConsumeStone(1);
+                            }
+                            else if (nearestFriendlyTown.Food > 0)
+                            {
+                                nearestFriendlyTown.TryConsumeFood(1);
+                            }
+
+                            var toSite = nearestSite.Position - entity.Position;
+                            entity.SetDirectedMovement(toSite, chaseDuration * 2f);
+                            entity.OnResourceAction(3f);
                         }
                     }
-
-                    // If we're near town and not already standing on a resource,
-                    // walk out toward a nearby resource patch.
-                    if (!onResource && nearestTownDistSq <= healRadiusSq)
+                    else
                     {
-                        if (TryFindNearbyResourceAroundTown(nearestFriendlyTown, out var targetWorldPos))
+                        // Harvester role: gather from tiles near town and bring back.
+                        var tileX = (int)(entity.Position.X / TileSize);
+                        var tileY = (int)(entity.Position.Y / TileSize);
+
+                        var onResource = false;
+                        if (tileX >= 0 && tileX < _worldManager.Width && tileY >= 0 && tileY < _worldManager.Height)
                         {
-                            var toRes = targetWorldPos - entity.Position;
-                            entity.SetDirectedMovement(toRes, chaseDuration * 2f);
+                            var tile = _worldManager.Tiles[tileX, tileY];
+                            if (tile.Resource != ResourceType.None && tile.ResourceAmount > 0)
+                            {
+                                // Pick up from the current tile.
+                                if (entity.TryPickUpResource(tile.Resource, 1))
+                                {
+                                    tile.ResourceAmount -= 1;
+                                    if (tile.ResourceAmount <= 0)
+                                    {
+                                        tile.Resource = ResourceType.None;
+                                    }
+
+                                    entity.OnResourceAction(3f);
+                                    onResource = true;
+                                }
+                            }
+                        }
+
+                        // If we're near town and not already standing on a resource,
+                        // walk out toward a nearby resource patch.
+                        if (!onResource && nearestTownDistSq <= healRadiusSq)
+                        {
+                            if (TryFindNearbyResourceAroundTown(nearestFriendlyTown, out var targetWorldPos))
+                            {
+                                var toRes = targetWorldPos - entity.Position;
+                                entity.SetDirectedMovement(toRes, chaseDuration * 2f);
+                            }
                         }
                     }
                 }
@@ -574,6 +661,21 @@ public class Game1 : Game
                 entity.Position,
                 Vector2.Zero,
                 new Vector2(_graphics.PreferredBackBufferWidth - 1, _graphics.PreferredBackBufferHeight - 1));
+        }
+    }
+
+    private void SpawnBuildersForSettlement(Town parentTown, SettlementSite site, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var builder = new Entity(parentTown.Position, parentTown.Race);
+
+            // Mark as carrying construction material so AI will route them toward the site.
+            builder.TryPickUpConstruction(ResourceType.Rock, 1);
+            var toSite = site.Position - builder.Position;
+            builder.SetDirectedMovement(toSite, 1.5f);
+
+            _entities.Add(builder);
         }
     }
 
@@ -739,6 +841,24 @@ public class Game1 : Game
 
             _spriteBatch.DrawString(_font, button.Label, textPos + new Vector2(1, 1), Color.Black * 0.7f);
             _spriteBatch.DrawString(_font, button.Label, textPos, Color.White);
+        }
+    }
+
+    private void DrawSettlementSites()
+    {
+        foreach (var site in _settlementSites)
+        {
+            var color = new Color(200, 200, 255, 220);
+            var border = new Color(80, 80, 160, 255);
+
+            var rect = new Rectangle((int)site.Position.X - 5, (int)site.Position.Y - 5, 10, 10);
+            _spriteBatch.Draw(_uiPixel, rect, color);
+
+            // Simple border
+            _spriteBatch.Draw(_uiPixel, new Rectangle(rect.X, rect.Y, rect.Width, 1), border);
+            _spriteBatch.Draw(_uiPixel, new Rectangle(rect.X, rect.Bottom - 1, rect.Width, 1), border);
+            _spriteBatch.Draw(_uiPixel, new Rectangle(rect.X, rect.Y, 1, rect.Height), border);
+            _spriteBatch.Draw(_uiPixel, new Rectangle(rect.Right - 1, rect.Y, 1, rect.Height), border);
         }
     }
 

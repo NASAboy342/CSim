@@ -28,6 +28,7 @@ public sealed class Entity
 
     public ResourceType CarriedResource { get; private set; } = ResourceType.None;
     public int CarriedAmount { get; private set; }
+    public bool CarryingForConstruction { get; private set; }
 
     private static readonly Random Random = new();
     private Vector2 _velocity;
@@ -161,6 +162,20 @@ public sealed class Entity
 
         CarriedResource = type;
         CarriedAmount = amount;
+        CarryingForConstruction = false;
+        return true;
+    }
+
+    public bool TryPickUpConstruction(ResourceType type, int amount)
+    {
+        if (IsCarryingResource || type == ResourceType.None || amount <= 0 || Health <= 0f)
+        {
+            return false;
+        }
+
+        CarriedResource = type;
+        CarriedAmount = amount;
+        CarryingForConstruction = true;
         return true;
     }
 
@@ -169,6 +184,7 @@ public sealed class Entity
         var amount = CarriedAmount;
         CarriedAmount = 0;
         CarriedResource = ResourceType.None;
+        CarryingForConstruction = false;
         return amount;
     }
 

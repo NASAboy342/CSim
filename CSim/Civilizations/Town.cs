@@ -139,4 +139,36 @@ public sealed class Town
         Food -= amount;
         return true;
     }
+
+    public bool ConsumeWood(int amount)
+    {
+        if (amount <= 0)
+        {
+            return true;
+        }
+
+        if (Wood < amount)
+        {
+            return false;
+        }
+
+        Wood -= amount;
+        return true;
+    }
+
+    public bool ConsumeStone(int amount)
+    {
+        if (amount <= 0)
+        {
+            return true;
+        }
+
+        if (Stone < amount)
+        {
+            return false;
+        }
+
+        Stone -= amount;
+        return true;
+    }
 }

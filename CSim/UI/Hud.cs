@@ -66,12 +66,15 @@ public sealed class Hud
             sb.AppendLine();
         }
 
-        sb.Append("Controls: 1-4 race, Z spawn, X raise, C lower, V lightning, B inspect, LMB apply tool, RMB found town (spawn), Esc quit");
+        sb.Append("Controls: 1-4 or race buttons to select race; Z/X/C/V/B or tool buttons to change tool; LMB apply tool; RMB found town (Spawn); Esc quit");
 
         var text = sb.ToString();
 
-        var shadowPos = new Vector2(9, 9);
-        var textPos = new Vector2(8, 8);
+        var viewport = spriteBatch.GraphicsDevice.Viewport;
+        var size = _font.MeasureString(text);
+
+        var textPos = new Vector2(8, viewport.Height - size.Y - 8);
+        var shadowPos = textPos + new Vector2(1, 1);
 
         spriteBatch.DrawString(_font, text, shadowPos, Color.Black * 0.7f);
         spriteBatch.DrawString(_font, text, textPos, Color.White);

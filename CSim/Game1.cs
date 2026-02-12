@@ -38,6 +38,26 @@ public class Game1 : Game
 
     private readonly Random _random = new();
 
+    private SpriteFont _font = null!;
+    private Texture2D _uiPixel = null!;
+
+    private sealed class ToolButton
+    {
+        public Rectangle Bounds;
+        public ToolMode Mode;
+        public string Label = string.Empty;
+    }
+
+    private sealed class RaceButton
+    {
+        public Rectangle Bounds;
+        public RaceType Race;
+        public string Label = string.Empty;
+    }
+
+    private readonly List<ToolButton> _toolButtons = new();
+    private readonly List<RaceButton> _raceButtons = new();
+
     private Town? _selectedTown;
     private Entity? _selectedEntity;
 
@@ -75,8 +95,14 @@ public class Game1 : Game
         _entityRenderer = new EntityRenderer(GraphicsDevice);
         _townRenderer = new TownRenderer(GraphicsDevice);
 
-        var font = Content.Load<SpriteFont>("Fonts/Default");
-        _hud = new Hud(font);
+        _font = Content.Load<SpriteFont>("Fonts/Default");
+        _hud = new Hud(_font);
+
+        _uiPixel = new Texture2D(GraphicsDevice, 1, 1);
+        _uiPixel.SetData(new[] { Color.White });
+
+        CreateRaceButtons();
+        CreateToolButtons();
 
     }
 
@@ -101,32 +127,41 @@ public class Game1 : Game
         if (keyboard.IsKeyDown(Keys.V)) _toolMode = ToolMode.Lightning;
         if (keyboard.IsKeyDown(Keys.B)) _toolMode = ToolMode.Inspect;
 
+        var mousePos = _inputManager.MousePosition;
+
         if (_inputManager.LeftClicked)
         {
-            switch (_toolMode)
+            if (TryClickRaceBar(mousePos) || TryClickToolbar(mousePos))
             {
-                case ToolMode.Spawn:
-                    _entities.Add(new Entity(_inputManager.MousePosition.ToVector2(), _currentRace));
-                    break;
-                case ToolMode.RaiseLand:
-                    ApplyRaiseLowerLand(_inputManager.MousePosition, true);
-                    break;
-                case ToolMode.LowerLand:
-                    ApplyRaiseLowerLand(_inputManager.MousePosition, false);
-                    break;
-                case ToolMode.Lightning:
-                    ApplyLightning(_inputManager.MousePosition.ToVector2());
-                    break;
-                case ToolMode.Inspect:
-                    ApplyInspect(_inputManager.MousePosition);
-                    break;
+                // UI click consumed, don't also apply world tool this frame.
+            }
+            else
+            {
+                switch (_toolMode)
+                {
+                    case ToolMode.Spawn:
+                        _entities.Add(new Entity(mousePos.ToVector2(), _currentRace));
+                        break;
+                    case ToolMode.RaiseLand:
+                        ApplyRaiseLowerLand(mousePos, true);
+                        break;
+                    case ToolMode.LowerLand:
+                        ApplyRaiseLowerLand(mousePos, false);
+                        break;
+                    case ToolMode.Lightning:
+                        ApplyLightning(mousePos.ToVector2());
+                        break;
+                    case ToolMode.Inspect:
+                        ApplyInspect(mousePos);
+                        break;
+                }
             }
         }
 
         if (_inputManager.RightClicked && _toolMode == ToolMode.Spawn)
         {
-            var tileX = _inputManager.MousePosition.X / TileSize;
-            var tileY = _inputManager.MousePosition.Y / TileSize;
+            var tileX = mousePos.X / TileSize;
+            var tileY = mousePos.Y / TileSize;
 
             if (tileX >= 0 && tileX < _worldManager.Width && tileY >= 0 && tileY < _worldManager.Height)
             {
@@ -188,6 +223,8 @@ public class Game1 : Game
         _worldRenderer.Draw(_spriteBatch);
         _townRenderer.Draw(_spriteBatch, _townManager);
         _entityRenderer.Draw(_spriteBatch, _entities);
+        DrawRaceBar();
+        DrawToolbar();
         _hud.Draw(_spriteBatch, _currentRace, _townManager, _entities.Count, _toolMode, _kingdomManager.Kingdoms.Count, _selectedTown, _selectedEntity);
         _spriteBatch.End();
 
@@ -333,6 +370,152 @@ public class Game1 : Game
             _kingdomManager.AssignTownToKingdom(town);
             return;
         }
+    }
+
+    private void CreateToolButtons()
+    {
+        _toolButtons.Clear();
+
+        var x = 8;
+        const int y = 32;
+        const int width = 96;
+        const int height = 24;
+        const int gap = 4;
+
+        void AddButton(ToolMode mode, string label)
+        {
+            _toolButtons.Add(new ToolButton
+            {
+                Mode = mode,
+                Label = label,
+                Bounds = new Rectangle(x, y, width, height)
+            });
+            x += width + gap;
+        }
+
+        AddButton(ToolMode.Spawn, "Spawn");
+        AddButton(ToolMode.RaiseLand, "Raise");
+        AddButton(ToolMode.LowerLand, "Lower");
+        AddButton(ToolMode.Lightning, "Lightning");
+        AddButton(ToolMode.Inspect, "Inspect");
+    }
+
+    private void CreateRaceButtons()
+    {
+        _raceButtons.Clear();
+
+        var x = 8;
+        const int y = 4;
+        const int width = 80;
+        const int height = 24;
+        const int gap = 4;
+
+        void AddButton(RaceType race, string label)
+        {
+            _raceButtons.Add(new RaceButton
+            {
+                Race = race,
+                Label = label,
+                Bounds = new Rectangle(x, y, width, height)
+            });
+            x += width + gap;
+        }
+
+        AddButton(RaceType.Human, "Human");
+        AddButton(RaceType.Orc, "Orc");
+        AddButton(RaceType.Elf, "Elf");
+        AddButton(RaceType.Dwarf, "Dwarf");
+    }
+
+    private void DrawToolbar()
+    {
+        foreach (var button in _toolButtons)
+        {
+            var isSelected = button.Mode == _toolMode;
+            var bgColor = isSelected ? new Color(80, 130, 220, 230) : new Color(30, 30, 40, 200);
+            var borderColor = new Color(10, 10, 15, 255);
+
+            // Background
+            _spriteBatch.Draw(_uiPixel, button.Bounds, bgColor);
+
+            // Border
+            var b = button.Bounds;
+            // Top
+            _spriteBatch.Draw(_uiPixel, new Rectangle(b.X, b.Y, b.Width, 1), borderColor);
+            // Bottom
+            _spriteBatch.Draw(_uiPixel, new Rectangle(b.X, b.Bottom - 1, b.Width, 1), borderColor);
+            // Left
+            _spriteBatch.Draw(_uiPixel, new Rectangle(b.X, b.Y, 1, b.Height), borderColor);
+            // Right
+            _spriteBatch.Draw(_uiPixel, new Rectangle(b.Right - 1, b.Y, 1, b.Height), borderColor);
+
+            // Label centered
+            var size = _font.MeasureString(button.Label);
+            var textPos = new Vector2(
+                b.X + (b.Width - size.X) * 0.5f,
+                b.Y + (b.Height - size.Y) * 0.5f);
+
+            _spriteBatch.DrawString(_font, button.Label, textPos + new Vector2(1, 1), Color.Black * 0.7f);
+            _spriteBatch.DrawString(_font, button.Label, textPos, Color.White);
+        }
+    }
+
+    private void DrawRaceBar()
+    {
+        foreach (var button in _raceButtons)
+        {
+            var isSelected = button.Race == _currentRace;
+            var bgColor = isSelected ? new Color(80, 180, 120, 230) : new Color(30, 60, 40, 200);
+            var borderColor = new Color(10, 20, 15, 255);
+
+            var b = button.Bounds;
+
+            // Background
+            _spriteBatch.Draw(_uiPixel, b, bgColor);
+
+            // Border
+            _spriteBatch.Draw(_uiPixel, new Rectangle(b.X, b.Y, b.Width, 1), borderColor);
+            _spriteBatch.Draw(_uiPixel, new Rectangle(b.X, b.Bottom - 1, b.Width, 1), borderColor);
+            _spriteBatch.Draw(_uiPixel, new Rectangle(b.X, b.Y, 1, b.Height), borderColor);
+            _spriteBatch.Draw(_uiPixel, new Rectangle(b.Right - 1, b.Y, 1, b.Height), borderColor);
+
+            // Label centered
+            var size = _font.MeasureString(button.Label);
+            var textPos = new Vector2(
+                b.X + (b.Width - size.X) * 0.5f,
+                b.Y + (b.Height - size.Y) * 0.5f);
+
+            _spriteBatch.DrawString(_font, button.Label, textPos + new Vector2(1, 1), Color.Black * 0.7f);
+            _spriteBatch.DrawString(_font, button.Label, textPos, Color.White);
+        }
+    }
+
+    private bool TryClickToolbar(Point mousePosition)
+    {
+        foreach (var button in _toolButtons)
+        {
+            if (button.Bounds.Contains(mousePosition))
+            {
+                _toolMode = button.Mode;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryClickRaceBar(Point mousePosition)
+    {
+        foreach (var button in _raceButtons)
+        {
+            if (button.Bounds.Contains(mousePosition))
+            {
+                _currentRace = button.Race;
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 

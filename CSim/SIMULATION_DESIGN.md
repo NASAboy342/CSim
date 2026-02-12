@@ -352,3 +352,8 @@ This document will evolve as the implementation grows and as we adjust scope bas
   - Added an `Inspect` option to `ToolMode` and bound it to the `B` key.  
   - In Inspect mode, left-click selects the nearest town or unit under the cursor; HUD shows details such as race, population/health, and position for the selection.  
   - Updated HUD controls text so players can see how to use the inspect tool alongside existing powers.  
+ 
+- **Step 12 – Toolbar UI for tools (2026-02-12)**  
+  - Added a clickable toolbar at the top of the screen with buttons for each tool mode (Spawn, Raise, Lower, Lightning, Inspect).  
+  - Left-clicking a toolbar button switches the active tool; keyboard shortcuts (Z/X/C/V/B) still work as an alternative.  
+  - HUD controls text now mentions both keyboard and toolbar interactions, making the UI closer to a typical god-sim tool palette.  

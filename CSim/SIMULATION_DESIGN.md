@@ -347,3 +347,8 @@ This document will evolve as the implementation grows and as we adjust scope bas
 - **Step 10 – Fix town list modification during iteration (2026-02-11)**  
   - Changed `Game1.Update` to iterate over towns using index-based loops with cached counts when processing spawn and colonization queues.  
   - This prevents `InvalidOperationException` errors caused by adding towns to the underlying list while it was being iterated.  
+ 
+- **Step 11 – Basic inspect tool (2026-02-12)**  
+  - Added an `Inspect` option to `ToolMode` and bound it to the `B` key.  
+  - In Inspect mode, left-click selects the nearest town or unit under the cursor; HUD shows details such as race, population/health, and position for the selection.  
+  - Updated HUD controls text so players can see how to use the inspect tool alongside existing powers.  

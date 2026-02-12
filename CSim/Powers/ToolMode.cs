@@ -5,5 +5,6 @@ public enum ToolMode
     Spawn,
     RaiseLand,
     LowerLand,
-    Lightning
+    Lightning,
+    Inspect
 }

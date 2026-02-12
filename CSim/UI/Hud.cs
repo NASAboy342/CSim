@@ -16,7 +16,15 @@ public sealed class Hud
         _font = font;
     }
 
-    public void Draw(SpriteBatch spriteBatch, RaceType currentRace, TownManager townManager, int entityCount, ToolMode toolMode, int kingdomCount)
+    public void Draw(
+        SpriteBatch spriteBatch,
+        RaceType currentRace,
+        TownManager townManager,
+        int entityCount,
+        ToolMode toolMode,
+        int kingdomCount,
+        Town? selectedTown,
+        Entity? selectedEntity)
     {
         var sb = new StringBuilder();
         sb.Append("Race: ");
@@ -30,7 +38,35 @@ public sealed class Hud
         sb.Append("  Units: ");
         sb.Append(entityCount);
         sb.AppendLine();
-        sb.Append("Controls: 1-4 race, Z spawn, X raise, C lower, V lightning, LMB apply tool, RMB found town (spawn), Esc quit");
+
+        if (selectedTown != null)
+        {
+            sb.Append("Selected Town: ");
+            sb.Append(selectedTown.Race);
+            sb.Append("  Pop: ");
+            sb.Append(selectedTown.Population);
+            sb.Append("  Pos: (");
+            sb.Append((int)selectedTown.Position.X);
+            sb.Append(",");
+            sb.Append((int)selectedTown.Position.Y);
+            sb.Append(")");
+            sb.AppendLine();
+        }
+        else if (selectedEntity != null)
+        {
+            sb.Append("Selected Unit: ");
+            sb.Append(selectedEntity.Race);
+            sb.Append("  HP: ");
+            sb.Append(selectedEntity.Health.ToString("0.0"));
+            sb.Append("  Pos: (");
+            sb.Append((int)selectedEntity.Position.X);
+            sb.Append(",");
+            sb.Append((int)selectedEntity.Position.Y);
+            sb.Append(")");
+            sb.AppendLine();
+        }
+
+        sb.Append("Controls: 1-4 race, Z spawn, X raise, C lower, V lightning, B inspect, LMB apply tool, RMB found town (spawn), Esc quit");
 
         var text = sb.ToString();
 

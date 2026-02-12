@@ -38,6 +38,9 @@ public class Game1 : Game
 
     private readonly Random _random = new();
 
+    private Town? _selectedTown;
+    private Entity? _selectedEntity;
+
     private const int TileSize = 8;
 
     public Game1()
@@ -96,6 +99,7 @@ public class Game1 : Game
         if (keyboard.IsKeyDown(Keys.X)) _toolMode = ToolMode.RaiseLand;
         if (keyboard.IsKeyDown(Keys.C)) _toolMode = ToolMode.LowerLand;
         if (keyboard.IsKeyDown(Keys.V)) _toolMode = ToolMode.Lightning;
+        if (keyboard.IsKeyDown(Keys.B)) _toolMode = ToolMode.Inspect;
 
         if (_inputManager.LeftClicked)
         {
@@ -112,6 +116,9 @@ public class Game1 : Game
                     break;
                 case ToolMode.Lightning:
                     ApplyLightning(_inputManager.MousePosition.ToVector2());
+                    break;
+                case ToolMode.Inspect:
+                    ApplyInspect(_inputManager.MousePosition);
                     break;
             }
         }
@@ -181,7 +188,7 @@ public class Game1 : Game
         _worldRenderer.Draw(_spriteBatch);
         _townRenderer.Draw(_spriteBatch, _townManager);
         _entityRenderer.Draw(_spriteBatch, _entities);
-        _hud.Draw(_spriteBatch, _currentRace, _townManager, _entities.Count, _toolMode, _kingdomManager.Kingdoms.Count);
+        _hud.Draw(_spriteBatch, _currentRace, _townManager, _entities.Count, _toolMode, _kingdomManager.Kingdoms.Count, _selectedTown, _selectedEntity);
         _spriteBatch.End();
 
         base.Draw(gameTime);
@@ -253,6 +260,42 @@ public class Game1 : Game
         }
 
         _entities.RemoveAll(e => e.Health <= 0f);
+    }
+
+    private void ApplyInspect(Point mousePosition)
+    {
+        const float maxSelectDistance = 32f;
+        var maxSelectDistanceSq = maxSelectDistance * maxSelectDistance;
+        var mouseWorld = mousePosition.ToVector2();
+
+        Town? bestTown = null;
+        var bestTownDistSq = maxSelectDistanceSq;
+
+        foreach (var town in _townManager.Towns)
+        {
+            var distSq = Vector2.DistanceSquared(mouseWorld, town.Position);
+            if (distSq < bestTownDistSq)
+            {
+                bestTownDistSq = distSq;
+                bestTown = town;
+            }
+        }
+
+        Entity? bestEntity = null;
+        var bestEntityDistSq = maxSelectDistanceSq;
+
+        foreach (var entity in _entities)
+        {
+            var distSq = Vector2.DistanceSquared(mouseWorld, entity.Position);
+            if (distSq < bestEntityDistSq)
+            {
+                bestEntityDistSq = distSq;
+                bestEntity = entity;
+            }
+        }
+
+        _selectedTown = bestTown;
+        _selectedEntity = bestEntity;
     }
 
     private void TryFoundColonyNear(Town parentTown, Vector2 basePosition)

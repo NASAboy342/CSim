@@ -395,8 +395,6 @@ public class Game1 : Game
 
     private void UpdateEntityBehaviors(GameTime gameTime)
     {
-        var delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
-
         const float chaseRadius = 96f;
         var chaseRadiusSq = chaseRadius * chaseRadius;
 
@@ -504,26 +502,66 @@ public class Game1 : Game
                 entity.SetDirectedMovement(homeDir, chaseDuration);
             }
 
-            // Opportunistic gathering: when standing on a resource tile near a friendly town and
-            // not in immediate danger, convert some of the local resource into town storage.
-            if (nearestFriendlyTown != null && nearestEnemy == null && entity.CanDoResourceAction)
+            // Gathering and hauling: if safe and near a friendly town, units will
+            // walk out to resource tiles, pick up resources, then walk back and
+            // deposit them into town storage.
+            if (nearestFriendlyTown != null && nearestEnemy == null)
             {
-                var tileX = (int)(entity.Position.X / TileSize);
-                var tileY = (int)(entity.Position.Y / TileSize);
-
-                if (tileX >= 0 && tileX < _worldManager.Width && tileY >= 0 && tileY < _worldManager.Height)
+                // Deposit if carrying and close enough to town.
+                if (entity.IsCarryingResource)
                 {
-                    var tile = _worldManager.Tiles[tileX, tileY];
-                    if (tile.Resource != ResourceType.None && tile.ResourceAmount > 0)
+                    if (nearestTownDistSq <= healRadiusSq && entity.CanDoResourceAction)
                     {
-                        nearestFriendlyTown.AddResource(tile.Resource, 1);
-                        tile.ResourceAmount -= 1;
-                        if (tile.ResourceAmount <= 0)
+                        var type = entity.CarriedResource;
+                        var amount = entity.DropResource();
+                        if (amount > 0 && type != ResourceType.None)
                         {
-                            tile.Resource = ResourceType.None;
+                            nearestFriendlyTown.AddResource(type, amount);
+                            entity.OnResourceAction(2f);
                         }
+                    }
+                    else
+                    {
+                        // Head back toward town with carried resources.
+                        var toTown = nearestFriendlyTown.Position - entity.Position;
+                        entity.SetDirectedMovement(toTown, chaseDuration);
+                    }
+                }
+                else if (entity.CanDoResourceAction)
+                {
+                    var tileX = (int)(entity.Position.X / TileSize);
+                    var tileY = (int)(entity.Position.Y / TileSize);
 
-                        entity.OnResourceAction(3f);
+                    var onResource = false;
+                    if (tileX >= 0 && tileX < _worldManager.Width && tileY >= 0 && tileY < _worldManager.Height)
+                    {
+                        var tile = _worldManager.Tiles[tileX, tileY];
+                        if (tile.Resource != ResourceType.None && tile.ResourceAmount > 0)
+                        {
+                            // Pick up from the current tile.
+                            if (entity.TryPickUpResource(tile.Resource, 1))
+                            {
+                                tile.ResourceAmount -= 1;
+                                if (tile.ResourceAmount <= 0)
+                                {
+                                    tile.Resource = ResourceType.None;
+                                }
+
+                                entity.OnResourceAction(3f);
+                                onResource = true;
+                            }
+                        }
+                    }
+
+                    // If we're near town and not already standing on a resource,
+                    // walk out toward a nearby resource patch.
+                    if (!onResource && nearestTownDistSq <= healRadiusSq)
+                    {
+                        if (TryFindNearbyResourceAroundTown(nearestFriendlyTown, out var targetWorldPos))
+                        {
+                            var toRes = targetWorldPos - entity.Position;
+                            entity.SetDirectedMovement(toRes, chaseDuration * 2f);
+                        }
                     }
                 }
             }
@@ -537,6 +575,53 @@ public class Game1 : Game
                 Vector2.Zero,
                 new Vector2(_graphics.PreferredBackBufferWidth - 1, _graphics.PreferredBackBufferHeight - 1));
         }
+    }
+
+    private bool TryFindNearbyResourceAroundTown(Town town, out Vector2 worldPosition)
+    {
+        const int searchRadiusTiles = 20;
+
+        var tileCenterX = (int)(town.Position.X / TileSize);
+        var tileCenterY = (int)(town.Position.Y / TileSize);
+
+        var bestDistSq = float.MaxValue;
+        var found = false;
+        worldPosition = town.Position;
+
+        for (var dx = -searchRadiusTiles; dx <= searchRadiusTiles; dx++)
+        {
+            var tx = tileCenterX + dx;
+            if (tx < 0 || tx >= _worldManager.Width)
+            {
+                continue;
+            }
+
+            for (var dy = -searchRadiusTiles; dy <= searchRadiusTiles; dy++)
+            {
+                var ty = tileCenterY + dy;
+                if (ty < 0 || ty >= _worldManager.Height)
+                {
+                    continue;
+                }
+
+                var tile = _worldManager.Tiles[tx, ty];
+                if (tile.Resource == ResourceType.None || tile.ResourceAmount <= 0)
+                {
+                    continue;
+                }
+
+                var worldPos = new Vector2((tx + 0.5f) * TileSize, (ty + 0.5f) * TileSize);
+                var distSq = Vector2.DistanceSquared(worldPos, town.Position);
+                if (distSq < bestDistSq)
+                {
+                    bestDistSq = distSq;
+                    worldPosition = worldPos;
+                    found = true;
+                }
+            }
+        }
+
+        return found;
     }
 
     private void CreateToolButtons()

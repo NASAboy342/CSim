@@ -31,6 +31,13 @@ public sealed class EntityRenderer
             var rect = new Rectangle((int)entity.Position.X - 3, (int)entity.Position.Y - 3, 6, 6);
             spriteBatch.Draw(_pixel, rect, color);
 
+            if (entity.IsCarryingResource)
+            {
+                var carryRect = new Rectangle(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2);
+                var carryColor = new Color(60, 40, 10, 230);
+                spriteBatch.Draw(_pixel, carryRect, carryColor);
+            }
+
             if (entity.MaxHealth > 0f)
             {
                 var hpRatio = MathHelper.Clamp(entity.Health / entity.MaxHealth, 0f, 1f);

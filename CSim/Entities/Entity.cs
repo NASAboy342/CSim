@@ -1,4 +1,5 @@
 using System;
+using CSim.World;
 using Microsoft.Xna.Framework;
 
 namespace CSim.Entities;
@@ -24,6 +25,9 @@ public sealed class Entity
     public float Damage { get; private set; }
 
     public float AttackInterval { get; private set; }
+
+    public ResourceType CarriedResource { get; private set; } = ResourceType.None;
+    public int CarriedAmount { get; private set; }
 
     private static readonly Random Random = new();
     private Vector2 _velocity;
@@ -144,6 +148,28 @@ public sealed class Entity
         {
             Health = MaxHealth;
         }
+    }
+
+    public bool IsCarryingResource => CarriedAmount > 0 && CarriedResource != ResourceType.None;
+
+    public bool TryPickUpResource(ResourceType type, int amount)
+    {
+        if (IsCarryingResource || type == ResourceType.None || amount <= 0 || Health <= 0f)
+        {
+            return false;
+        }
+
+        CarriedResource = type;
+        CarriedAmount = amount;
+        return true;
+    }
+
+    public int DropResource()
+    {
+        var amount = CarriedAmount;
+        CarriedAmount = 0;
+        CarriedResource = ResourceType.None;
+        return amount;
     }
 
     private void PickNewDirection()

@@ -370,3 +370,8 @@ This document will evolve as the implementation grows and as we adjust scope bas
   - Gave `Town` a basic store of `Food`, `Wood`, and `Stone` plus helpers to add resources and consume food. Population growth, unit spawning, and colonization now all require and consume food instead of growing from nothing.  
   - Updated entity behavior so units near friendly towns opportunistically gather resources from the tiles they stand on, adding them into town storage and depleting the tile's resource amount over time.  
   - Injured units that retreat to a friendly town can now heal by consuming stored food, giving resources a direct role in both population growth and battlefield attrition.
+ 
+- **Step 15 – Visible haulers (2026-02-12)**  
+  - Extended `Entity` with simple carrying state so units can hold a specific resource type and amount while walking between resource tiles and towns.  
+  - Reworked gathering logic so resources are only added to town storage when a carrying unit returns to town and deposits them, rather than being magically converted at a distance.  
+  - Updated `EntityRenderer` to draw a darker inset square over units that are currently carrying resources, making haulers visually stand out on the map.

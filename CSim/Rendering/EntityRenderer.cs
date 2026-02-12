@@ -19,7 +19,7 @@ public sealed class EntityRenderer
     {
         foreach (var entity in entities)
         {
-            var color = entity.Race switch
+            var baseColor = entity.Race switch
             {
                 RaceType.Human => Color.Yellow,
                 RaceType.Orc => new Color(0, 170, 0),
@@ -27,6 +27,16 @@ public sealed class EntityRenderer
                 RaceType.Dwarf => new Color(200, 160, 80),
                 _ => Color.White
             };
+
+            // Energy controls brightness: low energy is darker, high is brighter.
+            var energyFactor = 0.4f + 0.6f * entity.EnergyRatio;
+            if (energyFactor < 0f) energyFactor = 0f;
+            if (energyFactor > 1f) energyFactor = 1f;
+
+            var color = new Color(
+                (byte)(baseColor.R * energyFactor),
+                (byte)(baseColor.G * energyFactor),
+                (byte)(baseColor.B * energyFactor));
 
             var rect = new Rectangle((int)entity.Position.X - 3, (int)entity.Position.Y - 3, 6, 6);
             spriteBatch.Draw(_pixel, rect, color);

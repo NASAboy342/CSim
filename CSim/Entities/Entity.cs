@@ -26,11 +26,18 @@ public sealed class Entity
 
     public float AttackInterval { get; private set; }
 
+    public float AgeYears { get; private set; }
+    public float MaxAgeYears { get; private set; }
+
+    public float Energy { get; private set; }
+    public float MaxEnergy { get; private set; }
+
     public ResourceType CarriedResource { get; private set; } = ResourceType.None;
     public int CarriedAmount { get; private set; }
     public bool CarryingForConstruction { get; private set; }
 
     private static readonly Random Random = new();
+    private float _baseSpeed;
     private Vector2 _velocity;
     private float _directionTimer;
     private float _attackCooldown;
@@ -49,41 +56,62 @@ public sealed class Entity
             case RaceType.Human:
                 MaxHealth = 20f;
                 Damage = 3f;
-                Speed = 22f;
+                _baseSpeed = 22f;
                 AttackInterval = 0.7f;
+                MaxAgeYears = 60f;
+                MaxEnergy = 100f;
                 break;
             case RaceType.Orc:
                 MaxHealth = 26f;
                 Damage = 4f;
-                Speed = 20f;
+                _baseSpeed = 20f;
                 AttackInterval = 0.8f;
+                MaxAgeYears = 55f;
+                MaxEnergy = 110f;
                 break;
             case RaceType.Elf:
                 MaxHealth = 18f;
                 Damage = 3f;
-                Speed = 26f;
+                _baseSpeed = 26f;
                 AttackInterval = 0.6f;
+                MaxAgeYears = 70f;
+                MaxEnergy = 95f;
                 break;
             case RaceType.Dwarf:
                 MaxHealth = 24f;
                 Damage = 3.5f;
-                Speed = 18f;
+                _baseSpeed = 18f;
                 AttackInterval = 0.8f;
+                MaxAgeYears = 65f;
+                MaxEnergy = 105f;
                 break;
             default:
                 MaxHealth = 20f;
                 Damage = 3f;
-                Speed = 20f;
+                _baseSpeed = 20f;
                 AttackInterval = 0.7f;
+                MaxAgeYears = 60f;
+                MaxEnergy = 100f;
                 break;
         }
 
         Health = MaxHealth;
+        Speed = _baseSpeed;
+        AgeYears = 0f;
+        Energy = MaxEnergy;
     }
 
     public void Update(GameTime gameTime)
     {
         var delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        // Aging over time; when exceeding max age, the unit dies.
+        const float yearsPerSecond = 0.05f;
+        AgeYears += delta * yearsPerSecond;
+        if (AgeYears > MaxAgeYears)
+        {
+            Health = 0f;
+        }
 
         _attackCooldown -= delta;
         if (_attackCooldown < 0f)
@@ -96,6 +124,16 @@ public sealed class Entity
         {
             _resourceCooldown = 0f;
         }
+
+        // Aging slows movement speed.
+        var ageRatio = MaxAgeYears > 0f ? MathHelper.Clamp(AgeYears / MaxAgeYears, 0f, 1f) : 0f;
+        Speed = _baseSpeed * (1f - 0.4f * ageRatio);
+
+        // Basic energy drain over time and with movement. Tuned so units
+        // still have a chance to rest and eat, but will die if they stay
+        // active too long without food.
+        var movementFactor = _velocity.Length();
+        UseEnergy(delta * (0.35f + 0.18f * movementFactor));
 
         _directionTimer -= delta;
         if (_directionTimer <= 0f)
@@ -111,18 +149,20 @@ public sealed class Entity
         Health -= amount;
     }
 
-    public bool CanAttack => _attackCooldown <= 0f && Health > 0f;
+    public bool CanAttack => _attackCooldown <= 0f && Health > 0f && Energy > 5f;
 
     public void OnAttack()
     {
         _attackCooldown = AttackInterval;
+        UseEnergy(5f);
     }
 
-    public bool CanDoResourceAction => _resourceCooldown <= 0f && Health > 0f;
+    public bool CanDoResourceAction => _resourceCooldown <= 0f && Health > 0f && Energy > 3f;
 
     public void OnResourceAction(float intervalSeconds)
     {
         _resourceCooldown = intervalSeconds;
+        UseEnergy(2f);
     }
 
     public void SetDirectedMovement(Vector2 direction, float durationSeconds)
@@ -148,6 +188,20 @@ public sealed class Entity
         if (Health > MaxHealth)
         {
             Health = MaxHealth;
+        }
+    }
+
+    public void RegenerateEnergy(float amount)
+    {
+        if (amount <= 0f || Health <= 0f)
+        {
+            return;
+        }
+
+        Energy += amount;
+        if (Energy > MaxEnergy)
+        {
+            Energy = MaxEnergy;
         }
     }
 
@@ -186,6 +240,28 @@ public sealed class Entity
         CarriedResource = ResourceType.None;
         CarryingForConstruction = false;
         return amount;
+    }
+
+    public float EnergyRatio => MaxEnergy > 0f ? MathHelper.Clamp(Energy / MaxEnergy, 0f, 1f) : 0f;
+
+    private void UseEnergy(float amount)
+    {
+        if (amount <= 0f || Health <= 0f)
+        {
+            return;
+        }
+
+        Energy -= amount;
+        if (Energy < 0f)
+        {
+            Energy = 0f;
+        }
+
+        // If an entity fully runs out of energy, it dies.
+        if (Energy <= 0f && Health > 0f)
+        {
+            Health = 0f;
+        }
     }
 
     private void PickNewDirection()

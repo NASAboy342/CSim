@@ -380,3 +380,9 @@ This document will evolve as the implementation grows and as we adjust scope bas
   - Added a `SettlementSite` concept so colonization now creates a build site instead of an instant new town. Sites track required build progress and are rendered as special markers on the map.  
   - When a town requests colonization, a few builder units are spawned; they pick up construction materials from town storage and physically walk to the settlement site, contributing build progress when they arrive.  
   - Once enough construction work has been delivered to a site, it is converted into a real town and added to the appropriate kingdom, so new settlements now visibly emerge from unit activity rather than popping into existence.
+ 
+- **Step 17 – Aging and energy (2026-02-12)**  
+  - Extended `Entity` with an aging model and an energy pool: units now age over time, slow down as they approach their race-specific maximum age, and eventually die of old age.  
+  - Introduced per-unit energy that is drained by movement, combat, and work; low-energy units become less effective and will head back to friendly towns to rest.  
+  - Units can regenerate health and energy by consuming food from town storage when near a friendly town, tying stamina directly to the resource economy.  
+  - Updated rendering so a unit's energy level affects its brightness: well-rested, high-energy units appear brighter, while exhausted units look dimmer on the map.

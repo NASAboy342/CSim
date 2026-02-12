@@ -513,13 +513,38 @@ public class Game1 : Game
 
             var outnumbered = nearbyEnemyCount > nearbyFriendCount + 1;
 
-            // Healing at town if injured and close to a friendly town with food.
-            if (nearestFriendlyTown != null && nearestTownDistSq <= healRadiusSq && entity.Health < entity.MaxHealth && nearestFriendlyTown.Food > 0 && entity.CanDoResourceAction)
+            // Low energy units prefer to head back to town to rest.
+            if (nearestFriendlyTown != null && entity.EnergyRatio < 0.25f && nearestEnemy == null)
             {
-                if (nearestFriendlyTown.TryConsumeFood(1))
+                var restDir = nearestFriendlyTown.Position - entity.Position;
+                entity.SetDirectedMovement(restDir, chaseDuration);
+            }
+
+            // Healing and resting at town if close to a friendly town with food.
+            // Only consume food when the unit is meaningfully low on health
+            // or energy, so that towns can stack food for reproduction.
+            if (nearestFriendlyTown != null && nearestTownDistSq <= healRadiusSq && nearestFriendlyTown.Food > 0 && entity.CanDoResourceAction)
+            {
+                var healthRatio = entity.MaxHealth > 0f ? entity.Health / entity.MaxHealth : 1f;
+                var needsHeal = healthRatio < 0.7f;
+                var needsEnergy = entity.EnergyRatio < 0.4f;
+
+                if (needsHeal || needsEnergy)
                 {
-                    entity.Heal(6f);
-                    entity.OnResourceAction(2f);
+                    if (nearestFriendlyTown.TryConsumeFood(1))
+                    {
+                        if (needsHeal)
+                        {
+                            entity.Heal(8f);
+                        }
+
+                        if (needsEnergy)
+                        {
+                            entity.RegenerateEnergy(40f);
+                        }
+
+                        entity.OnResourceAction(2f);
+                    }
                 }
             }
 

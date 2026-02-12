@@ -203,14 +203,7 @@ public class Game1 : Game
 
         ResolveCombat();
 
-        foreach (var entity in _entities)
-        {
-            entity.Update(gameTime);
-            entity.Position = Vector2.Clamp(
-                entity.Position,
-                Vector2.Zero,
-                new Vector2(_graphics.PreferredBackBufferWidth - 1, _graphics.PreferredBackBufferHeight - 1));
-        }
+        UpdateEntityBehaviors(gameTime);
 
         base.Update(gameTime);
     }
@@ -273,26 +266,54 @@ public class Game1 : Game
 
     private void ResolveCombat()
     {
-        const float attackRadius = 8f;
+        const float attackRadius = 10f;
         var attackRadiusSq = attackRadius * attackRadius;
 
         for (var i = 0; i < _entities.Count; i++)
         {
-            var a = _entities[i];
-            for (var j = i + 1; j < _entities.Count; j++)
-            {
-                var b = _entities[j];
+            var attacker = _entities[i];
 
-                if (a.Race == b.Race)
+            if (!attacker.CanAttack)
+            {
+                continue;
+            }
+
+            Entity? bestTarget = null;
+            var bestTargetDistSq = attackRadiusSq;
+            var bestTargetHealth = float.MaxValue;
+
+            for (var j = 0; j < _entities.Count; j++)
+            {
+                if (i == j)
                 {
                     continue;
                 }
 
-                if (Vector2.DistanceSquared(a.Position, b.Position) <= attackRadiusSq)
+                var candidate = _entities[j];
+
+                if (candidate.Race == attacker.Race || candidate.Health <= 0f)
                 {
-                    a.ApplyDamage(b.Damage);
-                    b.ApplyDamage(a.Damage);
+                    continue;
                 }
+
+                var distSq = Vector2.DistanceSquared(attacker.Position, candidate.Position);
+                if (distSq > attackRadiusSq)
+                {
+                    continue;
+                }
+
+                if (distSq < bestTargetDistSq || (Math.Abs(distSq - bestTargetDistSq) < 0.01f && candidate.Health < bestTargetHealth))
+                {
+                    bestTargetDistSq = distSq;
+                    bestTargetHealth = candidate.Health;
+                    bestTarget = candidate;
+                }
+            }
+
+            if (bestTarget != null)
+            {
+                bestTarget.ApplyDamage(attacker.Damage);
+                attacker.OnAttack();
             }
         }
 
@@ -369,6 +390,113 @@ public class Game1 : Game
             _townManager.AddTown(town);
             _kingdomManager.AssignTownToKingdom(town);
             return;
+        }
+    }
+
+    private void UpdateEntityBehaviors(GameTime gameTime)
+    {
+        const float chaseRadius = 96f;
+        var chaseRadiusSq = chaseRadius * chaseRadius;
+
+        const float visionRadius = 140f;
+        var visionRadiusSq = visionRadius * visionRadius;
+
+        const float lowHealthThreshold = 3f;
+        const float fleeDuration = 0.8f;
+        const float chaseDuration = 0.4f;
+
+        const float maxTownDistance = 220f;
+        var maxTownDistanceSq = maxTownDistance * maxTownDistance;
+
+        const float supportRadius = 64f;
+        var supportRadiusSq = supportRadius * supportRadius;
+
+        for (var i = 0; i < _entities.Count; i++)
+        {
+            var entity = _entities[i];
+
+            Entity? nearestEnemy = null;
+            var nearestEnemyDistSq = visionRadiusSq;
+
+            var nearbyFriendCount = 0;
+            var nearbyEnemyCount = 0;
+
+            for (var j = 0; j < _entities.Count; j++)
+            {
+                if (i == j)
+                {
+                    continue;
+                }
+
+                var other = _entities[j];
+                var distSq = Vector2.DistanceSquared(entity.Position, other.Position);
+
+                if (other.Race == entity.Race)
+                {
+                    if (distSq <= supportRadiusSq)
+                    {
+                        nearbyFriendCount++;
+                    }
+                }
+                else
+                {
+                    if (distSq < nearestEnemyDistSq)
+                    {
+                        nearestEnemyDistSq = distSq;
+                        nearestEnemy = other;
+                    }
+
+                    if (distSq <= supportRadiusSq)
+                    {
+                        nearbyEnemyCount++;
+                    }
+                }
+            }
+
+            Town? nearestFriendlyTown = null;
+            var nearestTownDistSq = maxTownDistanceSq;
+
+            foreach (var town in _townManager.Towns)
+            {
+                if (town.Race != entity.Race)
+                {
+                    continue;
+                }
+
+                var distSq = Vector2.DistanceSquared(entity.Position, town.Position);
+                if (distSq < nearestTownDistSq)
+                {
+                    nearestTownDistSq = distSq;
+                    nearestFriendlyTown = town;
+                }
+            }
+
+            var outnumbered = nearbyEnemyCount > nearbyFriendCount + 1;
+
+            if (entity.Health <= lowHealthThreshold && nearestEnemy != null && nearestEnemyDistSq <= visionRadiusSq)
+            {
+                var fleeDir = entity.Position - nearestEnemy.Position;
+                entity.SetDirectedMovement(fleeDir, fleeDuration);
+            }
+            else if (nearestEnemy != null && nearestEnemyDistSq <= chaseRadiusSq && !outnumbered)
+            {
+                var chaseDir = nearestEnemy.Position - entity.Position;
+                entity.SetDirectedMovement(chaseDir, chaseDuration);
+            }
+            else if (nearestFriendlyTown != null && (nearestTownDistSq > maxTownDistanceSq * 0.5f || outnumbered))
+            {
+                var homeDir = nearestFriendlyTown.Position - entity.Position;
+                entity.SetDirectedMovement(homeDir, chaseDuration);
+            }
+        }
+
+        foreach (var entity in _entities)
+        {
+            entity.Update(gameTime);
+            entity.Position = Vector2.Clamp(
+                entity.Position,
+                Vector2.Zero,
+                new Vector2(_graphics.PreferredBackBufferWidth - 1, _graphics.PreferredBackBufferHeight - 1));
         }
     }
 

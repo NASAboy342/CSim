@@ -30,6 +30,30 @@ public sealed class EntityRenderer
 
             var rect = new Rectangle((int)entity.Position.X - 3, (int)entity.Position.Y - 3, 6, 6);
             spriteBatch.Draw(_pixel, rect, color);
+
+            if (entity.MaxHealth > 0f)
+            {
+                var hpRatio = MathHelper.Clamp(entity.Health / entity.MaxHealth, 0f, 1f);
+
+                if (hpRatio < 1f)
+                {
+                    var barWidth = 10;
+                    var barHeight = 2;
+                    var barX = (int)entity.Position.X - barWidth / 2;
+                    var barY = rect.Y - barHeight - 1;
+
+                    var backRect = new Rectangle(barX, barY, barWidth, barHeight);
+                    spriteBatch.Draw(_pixel, backRect, new Color(30, 30, 30, 220));
+
+                    var filledWidth = (int)(barWidth * hpRatio);
+                    if (filledWidth > 0)
+                    {
+                        var hpColor = Color.Lerp(Color.Red, Color.LimeGreen, hpRatio);
+                        var fillRect = new Rectangle(barX, barY, filledWidth, barHeight);
+                        spriteBatch.Draw(_pixel, fillRect, hpColor);
+                    }
+                }
+            }
         }
     }
 }

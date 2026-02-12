@@ -357,3 +357,10 @@ This document will evolve as the implementation grows and as we adjust scope bas
   - Added a clickable toolbar at the top of the screen with buttons for each tool mode (Spawn, Raise, Lower, Lightning, Inspect).  
   - Left-clicking a toolbar button switches the active tool; keyboard shortcuts (Z/X/C/V/B) still work as an alternative.  
   - HUD controls text now mentions both keyboard and toolbar interactions, making the UI closer to a typical god-sim tool palette.  
+ 
+- **Step 13 – Richer entity behaviors (2026-02-12)**  
+  - Extended `Entity` with a `SetDirectedMovement` method so higher-level logic can steer units for short periods.  
+  - Added an `UpdateEntityBehaviors` pass in `Game1.Update` that gives units more nuanced AI: they now chase nearby enemies when supported by nearby allies, flee when low on health or badly outnumbered, and drift back toward friendly towns if they roam too far.  
+  - When no explicit directive is active, entities still fall back to their existing random wandering, keeping the world feeling alive.  
+  - Updated rendering to draw a small health bar above each unit so the player can visually track remaining health during battles.  
+  - Reworked combat so each race has different health, damage, speed, and attack cadence, and units attack only when their personal cooldown is ready, targeting nearby foes instead of always trading instant hits.

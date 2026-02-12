@@ -15,16 +15,20 @@ public sealed class Entity
 {
     public Vector2 Position;
 
-    public float Speed = 20f;
+    public float Speed { get; private set; }
 
     public RaceType Race { get; }
 
-    public float Health { get; private set; } = 10f;
-    public float Damage { get; private set; } = 4f;
+    public float Health { get; private set; }
+    public float MaxHealth { get; private set; }
+    public float Damage { get; private set; }
+
+    public float AttackInterval { get; private set; }
 
     private static readonly Random Random = new();
     private Vector2 _velocity;
     private float _directionTimer;
+    private float _attackCooldown;
 
     private const float MinDirectionSeconds = 1f;
     private const float MaxDirectionSeconds = 3f;
@@ -33,11 +37,53 @@ public sealed class Entity
     {
         Position = position;
         Race = race;
+
+        switch (race)
+        {
+            case RaceType.Human:
+                MaxHealth = 20f;
+                Damage = 3f;
+                Speed = 22f;
+                AttackInterval = 0.7f;
+                break;
+            case RaceType.Orc:
+                MaxHealth = 26f;
+                Damage = 4f;
+                Speed = 20f;
+                AttackInterval = 0.8f;
+                break;
+            case RaceType.Elf:
+                MaxHealth = 18f;
+                Damage = 3f;
+                Speed = 26f;
+                AttackInterval = 0.6f;
+                break;
+            case RaceType.Dwarf:
+                MaxHealth = 24f;
+                Damage = 3.5f;
+                Speed = 18f;
+                AttackInterval = 0.8f;
+                break;
+            default:
+                MaxHealth = 20f;
+                Damage = 3f;
+                Speed = 20f;
+                AttackInterval = 0.7f;
+                break;
+        }
+
+        Health = MaxHealth;
     }
 
     public void Update(GameTime gameTime)
     {
         var delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        _attackCooldown -= delta;
+        if (_attackCooldown < 0f)
+        {
+            _attackCooldown = 0f;
+        }
 
         _directionTimer -= delta;
         if (_directionTimer <= 0f)
@@ -51,6 +97,25 @@ public sealed class Entity
     public void ApplyDamage(float amount)
     {
         Health -= amount;
+    }
+
+    public bool CanAttack => _attackCooldown <= 0f && Health > 0f;
+
+    public void OnAttack()
+    {
+        _attackCooldown = AttackInterval;
+    }
+
+    public void SetDirectedMovement(Vector2 direction, float durationSeconds)
+    {
+        if (direction.LengthSquared() < 0.0001f || durationSeconds <= 0f)
+        {
+            return;
+        }
+
+        direction.Normalize();
+        _velocity = direction;
+        _directionTimer = durationSeconds;
     }
 
     private void PickNewDirection()

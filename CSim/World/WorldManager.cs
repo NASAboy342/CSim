@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 
 namespace CSim.World;
@@ -10,6 +11,7 @@ public sealed class WorldManager
     public WorldTile[,] Tiles { get; }
 
     private readonly int _seaLevel;
+    private readonly Random _random = new();
 
     public WorldManager(int width, int height)
     {
@@ -39,7 +41,36 @@ public sealed class WorldManager
                     terrain = TerrainType.Mountain;
                 }
 
-                Tiles[x, y] = new WorldTile(x, y, terrain);
+                var tile = new WorldTile(x, y, terrain);
+
+                var roll = _random.NextDouble();
+
+                if (terrain == TerrainType.Grass)
+                {
+                    if (roll < 0.18)
+                    {
+                        tile.Resource = ResourceType.Tree;
+                        tile.ResourceAmount = _random.Next(3, 8);
+                    }
+                }
+                else if (terrain == TerrainType.Mountain)
+                {
+                    if (roll < 0.22)
+                    {
+                        tile.Resource = ResourceType.Rock;
+                        tile.ResourceAmount = _random.Next(4, 10);
+                    }
+                }
+                else if (terrain == TerrainType.Water)
+                {
+                    if (roll < 0.12)
+                    {
+                        tile.Resource = ResourceType.Fish;
+                        tile.ResourceAmount = _random.Next(5, 12);
+                    }
+                }
+
+                Tiles[x, y] = tile;
             }
         }
     }

@@ -364,3 +364,9 @@ This document will evolve as the implementation grows and as we adjust scope bas
   - When no explicit directive is active, entities still fall back to their existing random wandering, keeping the world feeling alive.  
   - Updated rendering to draw a small health bar above each unit so the player can visually track remaining health during battles.  
   - Reworked combat so each race has different health, damage, speed, and attack cadence, and units attack only when their personal cooldown is ready, targeting nearby foes instead of always trading instant hits.
+ 
+- **Step 14 – Basic resources and economy (2026-02-12)**  
+  - Extended `WorldTile` and `WorldManager` with a simple resource system: tiles can now hold trees, rocks, or fish with finite amounts, and the renderer overlays small markers to visualize them.  
+  - Gave `Town` a basic store of `Food`, `Wood`, and `Stone` plus helpers to add resources and consume food. Population growth, unit spawning, and colonization now all require and consume food instead of growing from nothing.  
+  - Updated entity behavior so units near friendly towns opportunistically gather resources from the tiles they stand on, adding them into town storage and depleting the tile's resource amount over time.  
+  - Injured units that retreat to a friendly town can now heal by consuming stored food, giving resources a direct role in both population growth and battlefield attrition.

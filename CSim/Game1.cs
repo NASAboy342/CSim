@@ -395,6 +395,8 @@ public class Game1 : Game
 
     private void UpdateEntityBehaviors(GameTime gameTime)
     {
+        var delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
         const float chaseRadius = 96f;
         var chaseRadiusSq = chaseRadius * chaseRadius;
 
@@ -410,6 +412,9 @@ public class Game1 : Game
 
         const float supportRadius = 64f;
         var supportRadiusSq = supportRadius * supportRadius;
+
+        const float healRadius = 32f;
+        var healRadiusSq = healRadius * healRadius;
 
         for (var i = 0; i < _entities.Count; i++)
         {
@@ -473,6 +478,16 @@ public class Game1 : Game
 
             var outnumbered = nearbyEnemyCount > nearbyFriendCount + 1;
 
+            // Healing at town if injured and close to a friendly town with food.
+            if (nearestFriendlyTown != null && nearestTownDistSq <= healRadiusSq && entity.Health < entity.MaxHealth && nearestFriendlyTown.Food > 0 && entity.CanDoResourceAction)
+            {
+                if (nearestFriendlyTown.TryConsumeFood(1))
+                {
+                    entity.Heal(6f);
+                    entity.OnResourceAction(2f);
+                }
+            }
+
             if (entity.Health <= lowHealthThreshold && nearestEnemy != null && nearestEnemyDistSq <= visionRadiusSq)
             {
                 var fleeDir = entity.Position - nearestEnemy.Position;
@@ -487,6 +502,30 @@ public class Game1 : Game
             {
                 var homeDir = nearestFriendlyTown.Position - entity.Position;
                 entity.SetDirectedMovement(homeDir, chaseDuration);
+            }
+
+            // Opportunistic gathering: when standing on a resource tile near a friendly town and
+            // not in immediate danger, convert some of the local resource into town storage.
+            if (nearestFriendlyTown != null && nearestEnemy == null && entity.CanDoResourceAction)
+            {
+                var tileX = (int)(entity.Position.X / TileSize);
+                var tileY = (int)(entity.Position.Y / TileSize);
+
+                if (tileX >= 0 && tileX < _worldManager.Width && tileY >= 0 && tileY < _worldManager.Height)
+                {
+                    var tile = _worldManager.Tiles[tileX, tileY];
+                    if (tile.Resource != ResourceType.None && tile.ResourceAmount > 0)
+                    {
+                        nearestFriendlyTown.AddResource(tile.Resource, 1);
+                        tile.ResourceAmount -= 1;
+                        if (tile.ResourceAmount <= 0)
+                        {
+                            tile.Resource = ResourceType.None;
+                        }
+
+                        entity.OnResourceAction(3f);
+                    }
+                }
             }
         }
 

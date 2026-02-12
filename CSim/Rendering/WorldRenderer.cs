@@ -1,3 +1,4 @@
+using System;
 using CSim.World;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -36,6 +37,32 @@ public sealed class WorldRenderer
 
                 var rect = new Rectangle(x * _tileSize, y * _tileSize, _tileSize, _tileSize);
                 spriteBatch.Draw(_pixel, rect, color);
+
+                if (tile.Resource != ResourceType.None && tile.ResourceAmount > 0)
+                {
+                    Color resColor;
+                    switch (tile.Resource)
+                    {
+                        case ResourceType.Tree:
+                            resColor = new Color(20, 110, 20);
+                            break;
+                        case ResourceType.Rock:
+                            resColor = new Color(150, 150, 150);
+                            break;
+                        case ResourceType.Fish:
+                            resColor = new Color(180, 220, 255);
+                            break;
+                        default:
+                            resColor = Color.White;
+                            break;
+                    }
+
+                    var rSize = Math.Max(2, _tileSize / 2);
+                    var rx = rect.X + (_tileSize - rSize) / 2;
+                    var ry = rect.Y + (_tileSize - rSize) / 2;
+                    var resRect = new Rectangle(rx, ry, rSize, rSize);
+                    spriteBatch.Draw(_pixel, resRect, resColor);
+                }
             }
         }
     }

@@ -45,6 +45,12 @@ public sealed class Hud
             sb.Append(selectedTown.Race);
             sb.Append("  Pop: ");
             sb.Append(selectedTown.Population);
+            sb.Append("  Food: ");
+            sb.Append(selectedTown.Food);
+            sb.Append("  Wood: ");
+            sb.Append(selectedTown.Wood);
+            sb.Append("  Stone: ");
+            sb.Append(selectedTown.Stone);
             sb.Append("  Pos: (");
             sb.Append((int)selectedTown.Position.X);
             sb.Append(",");

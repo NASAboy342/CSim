@@ -29,6 +29,7 @@ public sealed class Entity
     private Vector2 _velocity;
     private float _directionTimer;
     private float _attackCooldown;
+    private float _resourceCooldown;
 
     private const float MinDirectionSeconds = 1f;
     private const float MaxDirectionSeconds = 3f;
@@ -85,6 +86,12 @@ public sealed class Entity
             _attackCooldown = 0f;
         }
 
+        _resourceCooldown -= delta;
+        if (_resourceCooldown < 0f)
+        {
+            _resourceCooldown = 0f;
+        }
+
         _directionTimer -= delta;
         if (_directionTimer <= 0f)
         {
@@ -106,6 +113,13 @@ public sealed class Entity
         _attackCooldown = AttackInterval;
     }
 
+    public bool CanDoResourceAction => _resourceCooldown <= 0f && Health > 0f;
+
+    public void OnResourceAction(float intervalSeconds)
+    {
+        _resourceCooldown = intervalSeconds;
+    }
+
     public void SetDirectedMovement(Vector2 direction, float durationSeconds)
     {
         if (direction.LengthSquared() < 0.0001f || durationSeconds <= 0f)
@@ -116,6 +130,20 @@ public sealed class Entity
         direction.Normalize();
         _velocity = direction;
         _directionTimer = durationSeconds;
+    }
+
+    public void Heal(float amount)
+    {
+        if (amount <= 0f || Health <= 0f)
+        {
+            return;
+        }
+
+        Health += amount;
+        if (Health > MaxHealth)
+        {
+            Health = MaxHealth;
+        }
     }
 
     private void PickNewDirection()

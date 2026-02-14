@@ -133,7 +133,7 @@ public sealed class Entity
         // still have a chance to rest and eat, but will die if they stay
         // active too long without food.
         var movementFactor = _velocity.Length();
-        UseEnergy(delta * (0.35f + 0.18f * movementFactor));
+        UseEnergy(delta * (0.4f + 0.2f * movementFactor));
 
         _directionTimer -= delta;
         if (_directionTimer <= 0f)

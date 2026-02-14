@@ -7,6 +7,7 @@ using CSim.Powers;
 using CSim.Rendering;
 using CSim.UI;
 using CSim.World;
+using CSim.Spatial;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -24,6 +25,12 @@ public class Game1 : Game
     private readonly List<Entity> _entities = new();
     private EntityRenderer _entityRenderer;
     private InputManager _inputManager = null!;
+
+    private EntityQuadtree _entityQuadtree = null!;
+    private readonly List<Entity> _entityQueryResults = new();
+    private readonly List<Rectangle> _quadtreeDebugBounds = new();
+    private Rectangle _quadtreeToggleButtonBounds;
+    private bool _showQuadtree;
 
     private TownManager _townManager = null!;
     private TownRenderer _townRenderer = null!;
@@ -63,6 +70,13 @@ public class Game1 : Game
     private Town? _selectedTown;
     private Entity? _selectedEntity;
 
+    private Vector2 _cameraPosition;
+    private float _cameraZoom = 1f;
+    private const float MinCameraZoom = 0.5f;
+    private const float MaxCameraZoom = 3f;
+
+    private KeyboardState _previousKeyboard;
+
     private const int TileSize = 8;
 
     public Game1()
@@ -86,6 +100,14 @@ public class Game1 : Game
         _townManager = new TownManager();
         _kingdomManager = new KingdomManager();
 
+        var worldPixelWidth = tilesX * TileSize;
+        var worldPixelHeight = tilesY * TileSize;
+        var worldBounds = new Rectangle(0, 0, worldPixelWidth, worldPixelHeight);
+        _entityQuadtree = new EntityQuadtree(worldBounds);
+
+        _cameraPosition = Vector2.Zero;
+        _cameraZoom = 1f;
+
         base.Initialize();
     }
 
@@ -106,10 +128,14 @@ public class Game1 : Game
         CreateRaceButtons();
         CreateToolButtons();
 
+        _quadtreeToggleButtonBounds = new Rectangle(8, 60, 96, 24);
+
     }
 
     protected override void Update(GameTime gameTime)
     {
+        var delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
         {
             Exit();
@@ -129,7 +155,50 @@ public class Game1 : Game
         if (keyboard.IsKeyDown(Keys.V)) _toolMode = ToolMode.Lightning;
         if (keyboard.IsKeyDown(Keys.B)) _toolMode = ToolMode.Inspect;
 
+        // Camera zoom controls (Q = zoom in, E = zoom out).
+        const float zoomSpeed = 1.0f;
+        if (keyboard.IsKeyDown(Keys.Q))
+        {
+            _cameraZoom += zoomSpeed * delta;
+        }
+        if (keyboard.IsKeyDown(Keys.E))
+        {
+            _cameraZoom -= zoomSpeed * delta;
+        }
+        _cameraZoom = MathHelper.Clamp(_cameraZoom, MinCameraZoom, MaxCameraZoom);
+
+        // Camera movement with arrow keys.
+        var camMoveDir = Vector2.Zero;
+        if (keyboard.IsKeyDown(Keys.Left)) camMoveDir.X -= 1f;
+        if (keyboard.IsKeyDown(Keys.Right)) camMoveDir.X += 1f;
+        if (keyboard.IsKeyDown(Keys.Up)) camMoveDir.Y -= 1f;
+        if (keyboard.IsKeyDown(Keys.Down)) camMoveDir.Y += 1f;
+
+        if (camMoveDir != Vector2.Zero)
+        {
+            camMoveDir.Normalize();
+            var camSpeed = 400f / _cameraZoom;
+            _cameraPosition += camMoveDir * camSpeed * delta;
+        }
+
+        // Clamp camera to world bounds.
+        var worldWidthPixels = _worldManager.Width * TileSize;
+        var worldHeightPixels = _worldManager.Height * TileSize;
+        var viewWidthWorld = GraphicsDevice.Viewport.Width / _cameraZoom;
+        var viewHeightWorld = GraphicsDevice.Viewport.Height / _cameraZoom;
+        var maxCamX = Math.Max(0f, worldWidthPixels - viewWidthWorld);
+        var maxCamY = Math.Max(0f, worldHeightPixels - viewHeightWorld);
+        _cameraPosition.X = MathHelper.Clamp(_cameraPosition.X, 0f, maxCamX);
+        _cameraPosition.Y = MathHelper.Clamp(_cameraPosition.Y, 0f, maxCamY);
+
+        // Toggle fullscreen with F11 on key press.
+        if (keyboard.IsKeyDown(Keys.F11) && !_previousKeyboard.IsKeyDown(Keys.F11))
+        {
+            _graphics.ToggleFullScreen();
+        }
+
         var mousePos = _inputManager.MousePosition;
+        var mouseWorld = ScreenToWorld(mousePos);
 
         if (_inputManager.LeftClicked)
         {
@@ -142,19 +211,19 @@ public class Game1 : Game
                 switch (_toolMode)
                 {
                     case ToolMode.Spawn:
-                        _entities.Add(new Entity(mousePos.ToVector2(), _currentRace));
+                        _entities.Add(new Entity(mouseWorld, _currentRace));
                         break;
                     case ToolMode.RaiseLand:
-                        ApplyRaiseLowerLand(mousePos, true);
+                        ApplyRaiseLowerLand(mouseWorld, true);
                         break;
                     case ToolMode.LowerLand:
-                        ApplyRaiseLowerLand(mousePos, false);
+                        ApplyRaiseLowerLand(mouseWorld, false);
                         break;
                     case ToolMode.Lightning:
-                        ApplyLightning(mousePos.ToVector2());
+                        ApplyLightning(mouseWorld);
                         break;
                     case ToolMode.Inspect:
-                        ApplyInspect(mousePos);
+                        ApplyInspect(mouseWorld);
                         break;
                 }
             }
@@ -162,8 +231,8 @@ public class Game1 : Game
 
         if (_inputManager.RightClicked && _toolMode == ToolMode.Spawn)
         {
-            var tileX = mousePos.X / TileSize;
-            var tileY = mousePos.Y / TileSize;
+            var tileX = (int)(mouseWorld.X / TileSize);
+            var tileY = (int)(mouseWorld.Y / TileSize);
 
             if (tileX >= 0 && tileX < _worldManager.Width && tileY >= 0 && tileY < _worldManager.Height)
             {
@@ -203,6 +272,8 @@ public class Game1 : Game
             }
         }
 
+        RebuildEntityQuadtree();
+
         ResolveCombat();
 
         UpdateEntityBehaviors(gameTime);
@@ -223,17 +294,31 @@ public class Game1 : Game
         }
 
         base.Update(gameTime);
+
+        _previousKeyboard = keyboard;
     }
 
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
-        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        var cameraTransform = Matrix.CreateTranslation(-_cameraPosition.X, -_cameraPosition.Y, 0f) *
+                              Matrix.CreateScale(_cameraZoom, _cameraZoom, 1f);
+
+        // World rendering with camera transform.
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: cameraTransform);
         _worldRenderer.Draw(_spriteBatch);
         _townRenderer.Draw(_spriteBatch, _townManager);
         DrawSettlementSites();
         _entityRenderer.Draw(_spriteBatch, _entities);
+        if (_showQuadtree)
+        {
+            DrawQuadtreeDebug();
+        }
+        _spriteBatch.End();
+
+        // UI rendering in screen space.
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         DrawRaceBar();
         DrawToolbar();
         _hud.Draw(_spriteBatch, _currentRace, _townManager, _entities.Count, _toolMode, _kingdomManager.Kingdoms.Count, _selectedTown, _selectedEntity);
@@ -242,10 +327,10 @@ public class Game1 : Game
         base.Draw(gameTime);
     }
 
-    private void ApplyRaiseLowerLand(Point mousePosition, bool raise)
+    private void ApplyRaiseLowerLand(Vector2 worldPosition, bool raise)
     {
-        var tileX = mousePosition.X / TileSize;
-        var tileY = mousePosition.Y / TileSize;
+        var tileX = (int)(worldPosition.X / TileSize);
+        var tileY = (int)(worldPosition.Y / TileSize);
 
         if (tileX < 0 || tileX >= _worldManager.Width || tileY < 0 || tileY >= _worldManager.Height)
         {
@@ -291,7 +376,7 @@ public class Game1 : Game
         {
             var attacker = _entities[i];
 
-            if (!attacker.CanAttack)
+            if (!attacker.CanAttack || attacker.Health <= 0f)
             {
                 continue;
             }
@@ -300,14 +385,22 @@ public class Game1 : Game
             var bestTargetDistSq = attackRadiusSq;
             var bestTargetHealth = float.MaxValue;
 
-            for (var j = 0; j < _entities.Count; j++)
+            _entityQueryResults.Clear();
+
+            var queryRect = new Rectangle(
+                (int)(attacker.Position.X - attackRadius),
+                (int)(attacker.Position.Y - attackRadius),
+                (int)(attackRadius * 2f),
+                (int)(attackRadius * 2f));
+
+            _entityQuadtree.QueryRange(queryRect, _entityQueryResults);
+
+            foreach (var candidate in _entityQueryResults)
             {
-                if (i == j)
+                if (ReferenceEquals(candidate, attacker))
                 {
                     continue;
                 }
-
-                var candidate = _entities[j];
 
                 if (candidate.Race == attacker.Race || candidate.Health <= 0f)
                 {
@@ -338,11 +431,10 @@ public class Game1 : Game
         _entities.RemoveAll(e => e.Health <= 0f);
     }
 
-    private void ApplyInspect(Point mousePosition)
+    private void ApplyInspect(Vector2 mouseWorld)
     {
         const float maxSelectDistance = 32f;
         var maxSelectDistanceSq = maxSelectDistance * maxSelectDistance;
-        var mouseWorld = mousePosition.ToVector2();
 
         Town? bestTown = null;
         var bestTownDistSq = maxSelectDistanceSq;
@@ -412,6 +504,28 @@ public class Game1 : Game
         }
     }
 
+    private void RebuildEntityQuadtree()
+    {
+        _entityQuadtree.Clear();
+
+        for (var i = 0; i < _entities.Count; i++)
+        {
+            var entity = _entities[i];
+            if (entity.Health <= 0f)
+            {
+                continue;
+            }
+
+            _entityQuadtree.Insert(entity);
+        }
+    }
+
+    private Vector2 ScreenToWorld(Point screenPoint)
+    {
+        // Inverse of the camera transform used for world rendering.
+        return _cameraPosition + screenPoint.ToVector2() / _cameraZoom;
+    }
+
     private void UpdateEntityBehaviors(GameTime gameTime)
     {
         const float chaseRadius = 96f;
@@ -461,14 +575,23 @@ public class Game1 : Game
             var nearbyFriendCount = 0;
             var nearbyEnemyCount = 0;
 
-            for (var j = 0; j < _entities.Count; j++)
+            _entityQueryResults.Clear();
+
+            var neighborRect = new Rectangle(
+                (int)(entity.Position.X - visionRadius),
+                (int)(entity.Position.Y - visionRadius),
+                (int)(visionRadius * 2f),
+                (int)(visionRadius * 2f));
+
+            _entityQuadtree.QueryRange(neighborRect, _entityQueryResults);
+
+            foreach (var other in _entityQueryResults)
             {
-                if (i == j)
+                if (ReferenceEquals(other, entity) || other.Health <= 0f)
                 {
                     continue;
                 }
 
-                var other = _entities[j];
                 var distSq = Vector2.DistanceSquared(entity.Position, other.Position);
 
                 if (other.Race == entity.Race)
@@ -837,6 +960,28 @@ public class Game1 : Game
             _spriteBatch.DrawString(_font, button.Label, textPos + new Vector2(1, 1), Color.Black * 0.7f);
             _spriteBatch.DrawString(_font, button.Label, textPos, Color.White);
         }
+
+        // Quadtree debug toggle button
+        var dbgBounds = _quadtreeToggleButtonBounds;
+        var dbgSelected = _showQuadtree;
+        var dbgBgColor = dbgSelected ? new Color(80, 130, 220, 220) : new Color(30, 30, 40, 180);
+        var dbgBorderColor = new Color(10, 10, 15, 255);
+
+        _spriteBatch.Draw(_uiPixel, dbgBounds, dbgBgColor);
+
+        _spriteBatch.Draw(_uiPixel, new Rectangle(dbgBounds.X, dbgBounds.Y, dbgBounds.Width, 1), dbgBorderColor);
+        _spriteBatch.Draw(_uiPixel, new Rectangle(dbgBounds.X, dbgBounds.Bottom - 1, dbgBounds.Width, 1), dbgBorderColor);
+        _spriteBatch.Draw(_uiPixel, new Rectangle(dbgBounds.X, dbgBounds.Y, 1, dbgBounds.Height), dbgBorderColor);
+        _spriteBatch.Draw(_uiPixel, new Rectangle(dbgBounds.Right - 1, dbgBounds.Y, 1, dbgBounds.Height), dbgBorderColor);
+
+        const string dbgLabel = "Tree Grid";
+        var dbgSize = _font.MeasureString(dbgLabel);
+        var dbgTextPos = new Vector2(
+            dbgBounds.X + (dbgBounds.Width - dbgSize.X) * 0.5f,
+            dbgBounds.Y + (dbgBounds.Height - dbgSize.Y) * 0.5f);
+
+        _spriteBatch.DrawString(_font, dbgLabel, dbgTextPos + new Vector2(1, 1), Color.Black * 0.7f);
+        _spriteBatch.DrawString(_font, dbgLabel, dbgTextPos, Color.White);
     }
 
     private void DrawRaceBar()
@@ -887,6 +1032,23 @@ public class Game1 : Game
         }
     }
 
+    private void DrawQuadtreeDebug()
+    {
+        _quadtreeDebugBounds.Clear();
+        _entityQuadtree.CollectNodeBounds(_quadtreeDebugBounds);
+
+        var borderColor = new Color(0, 220, 0, 160);
+
+        foreach (var rect in _quadtreeDebugBounds)
+        {
+            // Draw only the borders of each quadtree node to visualize the grid.
+            _spriteBatch.Draw(_uiPixel, new Rectangle(rect.X, rect.Y, rect.Width, 1), borderColor);
+            _spriteBatch.Draw(_uiPixel, new Rectangle(rect.X, rect.Bottom - 1, rect.Width, 1), borderColor);
+            _spriteBatch.Draw(_uiPixel, new Rectangle(rect.X, rect.Y, 1, rect.Height), borderColor);
+            _spriteBatch.Draw(_uiPixel, new Rectangle(rect.Right - 1, rect.Y, 1, rect.Height), borderColor);
+        }
+    }
+
     private bool TryClickToolbar(Point mousePosition)
     {
         foreach (var button in _toolButtons)
@@ -896,6 +1058,12 @@ public class Game1 : Game
                 _toolMode = button.Mode;
                 return true;
             }
+        }
+
+        if (_quadtreeToggleButtonBounds.Contains(mousePosition))
+        {
+            _showQuadtree = !_showQuadtree;
+            return true;
         }
 
         return false;

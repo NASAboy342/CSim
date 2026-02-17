@@ -48,5 +48,36 @@ public sealed class KingdomManager
         _kingdoms.Add(newKingdom);
         return newKingdom;
     }
+
+    public void RemoveTown(Town town)
+    {
+        for (var i = _kingdoms.Count - 1; i >= 0; i--)
+        {
+            var kingdom = _kingdoms[i];
+            var hasTown = false;
+            foreach (var existing in kingdom.Towns)
+            {
+                if (ReferenceEquals(existing, town))
+                {
+                    hasTown = true;
+                    break;
+                }
+            }
+
+            if (!hasTown)
+            {
+                continue;
+            }
+
+            kingdom.RemoveTown(town);
+
+            if (kingdom.Towns.Count == 0)
+            {
+                _kingdoms.RemoveAt(i);
+            }
+
+            break;
+        }
+    }
 }
 

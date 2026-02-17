@@ -21,4 +21,9 @@ public sealed class TownManager
             town.Update(gameTime);
         }
     }
+
+    public void RemoveTown(Town town)
+    {
+        _towns.Remove(town);
+    }
 }

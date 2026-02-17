@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using CSim.Civilizations;
 using CSim.Entities;
 using CSim.Input;
@@ -129,6 +130,10 @@ public class Game1 : Game
         CreateToolButtons();
 
         _quadtreeToggleButtonBounds = new Rectangle(8, 60, 96, 24);
+
+        // Load entity textures for races that have custom sprites.
+        TryLoadEntityTexture("Human.png", RaceType.Human);
+        TryLoadEntityTexture("Orc.png", RaceType.Orc);
 
     }
 
@@ -385,6 +390,9 @@ public class Game1 : Game
             var bestTargetDistSq = attackRadiusSq;
             var bestTargetHealth = float.MaxValue;
 
+            Town? bestEnemyTown = null;
+            var bestEnemyTownDistSq = attackRadiusSq;
+
             _entityQueryResults.Clear();
 
             var queryRect = new Rectangle(
@@ -420,15 +428,85 @@ public class Game1 : Game
                     bestTarget = candidate;
                 }
             }
+            // If no enemy unit in range, try to damage an enemy town
+            // within the same attack radius.
+            if (bestTarget == null)
+            {
+                foreach (var town in _townManager.Towns)
+                {
+                    if (town.Race == attacker.Race || town.IsDestroyed)
+                    {
+                        continue;
+                    }
+
+                    var distSq = Vector2.DistanceSquared(attacker.Position, town.Position);
+                    if (distSq > attackRadiusSq)
+                    {
+                        continue;
+                    }
+
+                    if (distSq < bestEnemyTownDistSq)
+                    {
+                        bestEnemyTownDistSq = distSq;
+                        bestEnemyTown = town;
+                    }
+                }
+            }
 
             if (bestTarget != null)
             {
                 bestTarget.ApplyDamage(attacker.Damage);
                 attacker.OnAttack();
             }
+            else if (bestEnemyTown != null)
+            {
+                bestEnemyTown.ApplyDamage(attacker.Damage);
+                attacker.OnAttack();
+            }
         }
 
         _entities.RemoveAll(e => e.Health <= 0f);
+
+        // Handle town destruction and resource salvage.
+        for (var i = _townManager.Towns.Count - 1; i >= 0; i--)
+        {
+            var town = _townManager.Towns[i];
+            if (!town.IsDestroyed)
+            {
+                continue;
+            }
+
+            // Find nearest surviving town of a different race to receive loot.
+            Town? lootTarget = null;
+            var bestDistSq = float.MaxValue;
+            foreach (var other in _townManager.Towns)
+            {
+                if (other == town || other.IsDestroyed)
+                {
+                    continue;
+                }
+
+                if (other.Race == town.Race)
+                {
+                    continue;
+                }
+
+                var distSq = Vector2.DistanceSquared(other.Position, town.Position);
+                if (distSq < bestDistSq)
+                {
+                    bestDistSq = distSq;
+                    lootTarget = other;
+                }
+            }
+
+            if (lootTarget != null)
+            {
+                town.TransferAllResourcesTo(lootTarget);
+            }
+
+            _kingdomManager.RemoveTown(town);
+            _townManager.RemoveTown(town);
+        }
     }
 
     private void ApplyInspect(Vector2 mouseWorld)
@@ -517,6 +595,47 @@ public class Game1 : Game
             }
 
             _entityQuadtree.Insert(entity);
+        }
+    }
+
+    private void TryLoadEntityTexture(string fileName, RaceType race)
+    {
+        try
+        {
+            // Try a few likely locations relative to the executable so
+            // textures keep working even if the working directory changes.
+            var baseDir = AppContext.BaseDirectory;
+
+            string[] candidatePaths =
+            {
+                Path.Combine(baseDir, "Assets", fileName),
+                Path.Combine(baseDir, "..", "Assets", fileName),
+                Path.Combine(baseDir, "..", "..", "Assets", fileName),
+                Path.Combine(baseDir, "..", "..", "..", "Assets", fileName)
+            };
+
+            string? existing = null;
+            foreach (var candidate in candidatePaths)
+            {
+                if (File.Exists(candidate))
+                {
+                    existing = candidate;
+                    break;
+                }
+            }
+
+            if (existing == null)
+            {
+                return;
+            }
+
+            using var stream = File.OpenRead(existing);
+            var texture = Texture2D.FromStream(GraphicsDevice, stream);
+            _entityRenderer.SetRaceTexture(race, texture);
+        }
+        catch
+        {
+            // Ignore texture load failures; units will fall back to colored squares.
         }
     }
 

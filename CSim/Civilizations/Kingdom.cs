@@ -22,4 +22,9 @@ public sealed class Kingdom
     {
         _towns.Add(town);
     }
+
+    public void RemoveTown(Town town)
+    {
+        _towns.Remove(town);
+    }
 }

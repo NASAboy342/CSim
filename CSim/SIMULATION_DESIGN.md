@@ -386,3 +386,37 @@ This document will evolve as the implementation grows and as we adjust scope bas
   - Introduced per-unit energy that is drained by movement, combat, and work; low-energy units become less effective and will head back to friendly towns to rest.  
   - Units can regenerate health and energy by consuming food from town storage when near a friendly town, tying stamina directly to the resource economy.  
   - Updated rendering so a unit's energy level affects its brightness: well-rested, high-energy units appear brighter, while exhausted units look dimmer on the map.
+
+- **Step 18 – Energy tuning and hard exhaustion (2026-02-13)**  
+  - Tweaked continuous energy drain and per-action energy costs so units can still build up food reserves while remaining meaningfully constrained by stamina.  
+  - Changed energy-to-food exchange at towns so units only eat when significantly low on health or energy, getting more benefit per unit of food instead of constantly snacking.  
+  - Made energy a hard life requirement: when a unit's energy is fully depleted, its health is set to zero and it dies of exhaustion.
+
+- **Step 19 – Renewable resources (2026-02-13)**  
+  - Extended `WorldManager.Update` with slow regrowth rules for trees and fish so forests and fishing spots gradually recover instead of being permanently depleted.  
+  - Grass tiles now have a tiny chance to sprout new trees and existing tree tiles can very slowly gain additional wood/food up to a cap.  
+  - Water tiles with fish slowly increase their fish amount over time, and empty water tiles have a rare chance to spawn new fish schools.
+
+- **Step 20 – Spatial index and quadtree debug view (2026-02-13)**  
+  - Added an `EntityQuadtree` to index units spatially and replaced O(N²) neighbor scans in combat and behavior logic with local quadtree range queries.  
+  - Greatly improved performance at high populations (700–800+ units) by limiting per-unit neighbor checks to nearby cells.  
+  - Added a "Tree Grid" toggle button to the toolbar that overlays the quadtree node grid on the world for debugging.
+
+- **Step 21 – Improved world generation (2026-02-14)**  
+  - Replaced the old banded terrain generator with a simple 2D noise plus latitude-based heightmap to create smoother, more logical continents and coastlines.  
+  - Terrain is now classified by elevation into water, grass, and mountains, and resource placement (trees, rocks, fish) is layered on top of this new map.
+
+- **Step 22 – Camera navigation and fullscreen (2026-02-14)**  
+  - Introduced a camera system with position and zoom, rendering the world through a transform while keeping the HUD and toolbars in screen space.  
+  - Added keyboard navigation: Q/E zoom in and out, arrow keys pan the camera across the world, and F11 toggles fullscreen mode.  
+  - Updated all mouse-based tools (spawn, terrain editing, lightning, inspect, town founding) to operate in world coordinates so they respect camera pan and zoom.
+
+- **Step 23 – Town destruction and resource salvage (2026-02-14)**  
+  - Gave `Town` its own health pool and destruction state, and wired `ResolveCombat` so units can damage nearby enemy towns when no enemy units are in reach.  
+  - When a town's health reaches zero, it is removed from its `Kingdom` and `TownManager`, and its stored Food/Wood/Stone are transferred to the nearest surviving enemy town as loot.  
+  - Empty kingdoms are automatically cleaned up when their last town is destroyed, keeping the high-level civilization model consistent.
+
+- **Step 24 – Entity textures and visual polish (2026-02-17)**  
+  - Added support in `EntityRenderer` for per-race textures and registered custom sprites for Humans and Orcs from the `Assets` folder, rendered at half scale to keep them readable.  
+  - Left the existing color/brightness tinting in place so textures still reflect race and energy level, and preserved health bars plus the inset-square overlay for units carrying resources.  
+  - Made texture loading more robust by probing multiple possible `Assets` paths relative to the executable, falling back gracefully to colored squares if textures are missing.

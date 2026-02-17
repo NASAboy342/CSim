@@ -15,6 +15,9 @@ public sealed class Town
     public int Wood { get; private set; }
     public int Stone { get; private set; }
 
+    public float Health { get; private set; }
+    public float MaxHealth { get; private set; }
+
     private float _populationTimer;
     private float _spawnTimer;
 
@@ -37,11 +40,20 @@ public sealed class Town
         Food = 0;
         Wood = 0;
         Stone = 0;
+
+        // Town durability scales lightly with starting population.
+        MaxHealth = 80f + initialPopulation * 4f;
+        Health = MaxHealth;
     }
 
     public void Update(GameTime gameTime)
     {
         var delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        if (Health <= 0f)
+        {
+            return;
+        }
 
         _populationTimer += delta;
         _spawnTimer += delta;
@@ -73,6 +85,38 @@ public sealed class Town
                 _colonizationQueued = true;
             }
         }
+    }
+
+    public void ApplyDamage(float amount)
+    {
+        if (amount <= 0f || Health <= 0f)
+        {
+            return;
+        }
+
+        Health -= amount;
+        if (Health < 0f)
+        {
+            Health = 0f;
+        }
+    }
+
+    public bool IsDestroyed => Health <= 0f;
+
+    public void TransferAllResourcesTo(Town target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        target.Food += Food;
+        target.Wood += Wood;
+        target.Stone += Stone;
+
+        Food = 0;
+        Wood = 0;
+        Stone = 0;
     }
 
     public bool TryDequeueSpawnPosition(out Vector2 position)

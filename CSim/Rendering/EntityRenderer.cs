@@ -9,10 +9,26 @@ public sealed class EntityRenderer
 {
     private readonly Texture2D _pixel;
 
+    private Texture2D? _humanTexture;
+    private Texture2D? _orcTexture;
+
     public EntityRenderer(GraphicsDevice graphicsDevice)
     {
         _pixel = new Texture2D(graphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
+    }
+
+    public void SetRaceTexture(RaceType race, Texture2D texture)
+    {
+        switch (race)
+        {
+            case RaceType.Human:
+                _humanTexture = texture;
+                break;
+            case RaceType.Orc:
+                _orcTexture = texture;
+                break;
+        }
     }
 
     public void Draw(SpriteBatch spriteBatch, IEnumerable<Entity> entities)
@@ -38,8 +54,25 @@ public sealed class EntityRenderer
                 (byte)(baseColor.G * energyFactor),
                 (byte)(baseColor.B * energyFactor));
 
-            var rect = new Rectangle((int)entity.Position.X - 3, (int)entity.Position.Y - 3, 6, 6);
-            spriteBatch.Draw(_pixel, rect, color);
+            var rect = new Rectangle((int)entity.Position.X - 4, (int)entity.Position.Y - 4, 8, 8);
+
+            Texture2D? texture = entity.Race switch
+            {
+                RaceType.Human => _humanTexture,
+                RaceType.Orc => _orcTexture,
+                _ => null
+            };
+
+            if (texture != null)
+            {
+                var origin = new Vector2(texture.Width * 0.5f, texture.Height * 0.5f);
+                const float textureScale = 0.5f;
+                spriteBatch.Draw(texture, entity.Position, null, color, 0f, origin, textureScale, SpriteEffects.None, 0f);
+            }
+            else
+            {
+                spriteBatch.Draw(_pixel, rect, color);
+            }
 
             if (entity.IsCarryingResource)
             {

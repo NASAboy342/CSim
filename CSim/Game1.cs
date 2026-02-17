@@ -823,6 +823,7 @@ public class Game1 : Game
                         {
                             nearestSite.AddBuildUnits(amount);
                             entity.OnResourceAction(2f);
+                            nearestSite.ReleaseBuilder();
                         }
                     }
                     else
@@ -857,26 +858,34 @@ public class Game1 : Game
                     // pick up some construction material from town storage and walk it out.
                     if (nearestSite != null && nearestTownDistSq <= healRadiusSq && nearestFriendlyTown.Food + nearestFriendlyTown.Wood + nearestFriendlyTown.Stone > 0)
                     {
-                        if (entity.TryPickUpConstruction(ResourceType.Rock, 1))
+                        if (nearestSite.TryReserveBuilder())
                         {
-                            // Consume a generic unit of material; we don't distinguish
-                            // types here for simplicity.
-                            if (nearestFriendlyTown.Wood > 0)
+                            if (entity.TryPickUpConstruction(ResourceType.Rock, 1))
                             {
-                                nearestFriendlyTown.ConsumeWood(1);
-                            }
-                            else if (nearestFriendlyTown.Stone > 0)
-                            {
-                                nearestFriendlyTown.ConsumeStone(1);
-                            }
-                            else if (nearestFriendlyTown.Food > 0)
-                            {
-                                nearestFriendlyTown.TryConsumeFood(1);
-                            }
+                                // Consume a generic unit of material; we don't distinguish
+                                // types here for simplicity.
+                                if (nearestFriendlyTown.Wood > 0)
+                                {
+                                    nearestFriendlyTown.ConsumeWood(1);
+                                }
+                                else if (nearestFriendlyTown.Stone > 0)
+                                {
+                                    nearestFriendlyTown.ConsumeStone(1);
+                                }
+                                else if (nearestFriendlyTown.Food > 0)
+                                {
+                                    nearestFriendlyTown.TryConsumeFood(1);
+                                }
 
-                            var toSite = nearestSite.Position - entity.Position;
-                            entity.SetDirectedMovement(toSite, chaseDuration * 2f);
-                            entity.OnResourceAction(3f);
+                                var toSite = nearestSite.Position - entity.Position;
+                                entity.SetDirectedMovement(toSite, chaseDuration * 2f);
+                                entity.OnResourceAction(3f);
+                            }
+                            else
+                            {
+                                // Failed to pick up construction; free the reservation.
+                                nearestSite.ReleaseBuilder();
+                            }
                         }
                     }
                     else
@@ -935,6 +944,11 @@ public class Game1 : Game
     {
         for (var i = 0; i < count; i++)
         {
+            if (!site.TryReserveBuilder())
+            {
+                break;
+            }
+
             var builder = new Entity(parentTown.Position, parentTown.Race);
 
             // Mark as carrying construction material so AI will route them toward the site.

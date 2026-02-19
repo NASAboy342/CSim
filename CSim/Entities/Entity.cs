@@ -36,6 +36,13 @@ public sealed class Entity
     public int CarriedAmount { get; private set; }
     public bool CarryingForConstruction { get; private set; }
 
+    // Simple "information" memory so units only react to
+    // tasks they or their neighbors have recently discovered.
+    public Vector2? KnownEnemyPosition { get; set; }
+    public Vector2? KnownFriendlyTownPosition { get; set; }
+    public Vector2? KnownResourcePosition { get; set; }
+    public Vector2? KnownSettlementSitePosition { get; set; }
+
     private static readonly Random Random = new();
     private float _baseSpeed;
     private Vector2 _velocity;
@@ -99,6 +106,11 @@ public sealed class Entity
         Speed = _baseSpeed;
         AgeYears = 0f;
         Energy = MaxEnergy;
+
+        KnownEnemyPosition = null;
+        KnownFriendlyTownPosition = null;
+        KnownResourcePosition = null;
+        KnownSettlementSitePosition = null;
     }
 
     public void Update(GameTime gameTime)

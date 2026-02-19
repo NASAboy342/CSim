@@ -102,6 +102,17 @@ public class Game1 : Game
 
         public Town? NearestFriendlyTown;
         public float NearestTownDistSq;
+
+        public Vector2? KnownEnemyPosition;
+        public Vector2? KnownFriendlyTownPosition;
+        public Vector2? KnownResourcePosition;
+        public Vector2? KnownSettlementSitePosition;
+    }
+
+    private struct NeighborBuffers
+    {
+        public List<Entity> EntityResults;
+        public List<Town> TownResults;
     }
 
     public Game1()
@@ -781,104 +792,119 @@ public class Game1 : Game
 
         var contexts = new EntityContext[entityCount];
 
-        Parallel.For(0, entityCount, i =>
-        {
-            var entity = _entities[i];
-
-            var ctx = new EntityContext
+        Parallel.For(0, entityCount,
+            () => new NeighborBuffers
             {
-                NearestSite = null,
-                NearestSiteDistSq = float.MaxValue,
-                NearestEnemy = null,
-                NearestEnemyDistSq = visionRadiusSq,
-                NearbyFriendCount = 0,
-                NearbyEnemyCount = 0,
-                NearestFriendlyTown = null,
-                NearestTownDistSq = maxTownDistanceSq
-            };
-
-            foreach (var site in _settlementSites)
+                EntityResults = new List<Entity>(),
+                TownResults = new List<Town>()
+            },
+            (i, loopState, buffers) =>
             {
-                if (site.Race != entity.Race || site.IsComplete)
+                var entity = _entities[i];
+
+                var ctx = new EntityContext
                 {
-                    continue;
-                }
+                    NearestSite = null,
+                    NearestSiteDistSq = float.MaxValue,
+                    NearestEnemy = null,
+                    NearestEnemyDistSq = visionRadiusSq,
+                    NearbyFriendCount = 0,
+                    NearbyEnemyCount = 0,
+                    NearestFriendlyTown = null,
+                    NearestTownDistSq = maxTownDistanceSq,
+                    KnownEnemyPosition = entity.KnownEnemyPosition,
+                    KnownFriendlyTownPosition = entity.KnownFriendlyTownPosition,
+                    KnownResourcePosition = entity.KnownResourcePosition,
+                    KnownSettlementSitePosition = entity.KnownSettlementSitePosition
+                };
 
-                var distSqToSite = Vector2.DistanceSquared(entity.Position, site.Position);
-                if (distSqToSite < ctx.NearestSiteDistSq)
+                foreach (var site in _settlementSites)
                 {
-                    ctx.NearestSiteDistSq = distSqToSite;
-                    ctx.NearestSite = site;
-                }
-            }
-
-            var neighborRect = new Rectangle(
-                (int)(entity.Position.X - visionRadius),
-                (int)(entity.Position.Y - visionRadius),
-                (int)(visionRadius * 2f),
-                (int)(visionRadius * 2f));
-
-            var entityResults = new List<Entity>();
-            _entityQuadtree.QueryRange(neighborRect, entityResults);
-
-            foreach (var other in entityResults)
-            {
-                if (ReferenceEquals(other, entity) || other.Health <= 0f)
-                {
-                    continue;
-                }
-
-                var distSq = Vector2.DistanceSquared(entity.Position, other.Position);
-
-                if (other.Race == entity.Race)
-                {
-                    if (distSq <= supportRadiusSq)
+                    if (site.Race != entity.Race || site.IsComplete)
                     {
-                        ctx.NearbyFriendCount++;
-                    }
-                }
-                else
-                {
-                    if (distSq < ctx.NearestEnemyDistSq)
-                    {
-                        ctx.NearestEnemyDistSq = distSq;
-                        ctx.NearestEnemy = other;
+                        continue;
                     }
 
-                    if (distSq <= supportRadiusSq)
+                    var distSqToSite = Vector2.DistanceSquared(entity.Position, site.Position);
+                    if (distSqToSite < ctx.NearestSiteDistSq)
                     {
-                        ctx.NearbyEnemyCount++;
+                        ctx.NearestSiteDistSq = distSqToSite;
+                        ctx.NearestSite = site;
                     }
                 }
-            }
 
-            var townSearchRadius = (float)Math.Sqrt(maxTownDistanceSq);
-            var townQueryRect = new Rectangle(
-                (int)(entity.Position.X - townSearchRadius),
-                (int)(entity.Position.Y - townSearchRadius),
-                (int)(townSearchRadius * 2f),
-                (int)(townSearchRadius * 2f));
+                var neighborRect = new Rectangle(
+                    (int)(entity.Position.X - visionRadius),
+                    (int)(entity.Position.Y - visionRadius),
+                    (int)(visionRadius * 2f),
+                    (int)(visionRadius * 2f));
 
-            var townResults = new List<Town>();
-            _townQuadtree.QueryRange(townQueryRect, townResults);
+                var entityResults = buffers.EntityResults;
+                entityResults.Clear();
+                _entityQuadtree.QueryRange(neighborRect, entityResults);
 
-            foreach (var town in townResults)
-            {
-                if (town.Race != entity.Race)
+                foreach (var other in entityResults)
                 {
-                    continue;
+                    if (ReferenceEquals(other, entity) || other.Health <= 0f)
+                    {
+                        continue;
+                    }
+
+                    var distSq = Vector2.DistanceSquared(entity.Position, other.Position);
+
+                    if (other.Race == entity.Race)
+                    {
+                        if (distSq <= supportRadiusSq)
+                        {
+                            ctx.NearbyFriendCount++;
+                        }
+                    }
+                    else
+                    {
+                        if (distSq < ctx.NearestEnemyDistSq)
+                        {
+                            ctx.NearestEnemyDistSq = distSq;
+                            ctx.NearestEnemy = other;
+                        }
+
+                        if (distSq <= supportRadiusSq)
+                        {
+                            ctx.NearbyEnemyCount++;
+                        }
+                    }
                 }
 
-                var distSq = Vector2.DistanceSquared(entity.Position, town.Position);
-                if (distSq < ctx.NearestTownDistSq)
-                {
-                    ctx.NearestTownDistSq = distSq;
-                    ctx.NearestFriendlyTown = town;
-                }
-            }
+                var townSearchRadius = (float)Math.Sqrt(maxTownDistanceSq);
+                var townQueryRect = new Rectangle(
+                    (int)(entity.Position.X - townSearchRadius),
+                    (int)(entity.Position.Y - townSearchRadius),
+                    (int)(townSearchRadius * 2f),
+                    (int)(townSearchRadius * 2f));
 
-            contexts[i] = ctx;
-        });
+                var townResults = buffers.TownResults;
+                townResults.Clear();
+                _townQuadtree.QueryRange(townQueryRect, townResults);
+
+                foreach (var town in townResults)
+                {
+                    if (town.Race != entity.Race)
+                    {
+                        continue;
+                    }
+
+                    var distSq = Vector2.DistanceSquared(entity.Position, town.Position);
+                    if (distSq < ctx.NearestTownDistSq)
+                    {
+                        ctx.NearestTownDistSq = distSq;
+                        ctx.NearestFriendlyTown = town;
+                        ctx.KnownFriendlyTownPosition = town.Position;
+                    }
+                }
+
+                contexts[i] = ctx;
+                return buffers;
+            },
+            _ => { });
 
         for (var i = 0; i < entityCount; i++)
         {
@@ -896,6 +922,12 @@ public class Game1 : Game
 
             var nearestFriendlyTown = context.NearestFriendlyTown;
             var nearestTownDistSq = context.NearestTownDistSq;
+
+            // Update the entity's remembered information from the context.
+            entity.KnownEnemyPosition = context.KnownEnemyPosition;
+            entity.KnownFriendlyTownPosition = context.KnownFriendlyTownPosition;
+            entity.KnownResourcePosition = context.KnownResourcePosition;
+            entity.KnownSettlementSitePosition = context.KnownSettlementSitePosition;
 
             var outnumbered = nearbyEnemyCount > nearbyFriendCount + 1;
 

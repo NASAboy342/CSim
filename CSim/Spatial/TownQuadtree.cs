@@ -1,17 +1,16 @@
 using System.Collections.Generic;
-using CSim.Entities;
+using CSim.Civilizations;
 using Microsoft.Xna.Framework;
 
 namespace CSim.Spatial;
 
-public sealed class EntityQuadtree
+public sealed class TownQuadtree
 {
     private sealed class Node
     {
         public Rectangle Bounds;
-        public readonly List<Entity> Items = new();
+        public readonly List<Town> Items = new();
         public Node[]? Children;
-        public int SubtreeCount;
 
         public Node(Rectangle bounds)
         {
@@ -23,7 +22,7 @@ public sealed class EntityQuadtree
     private readonly int _maxDepth;
     private readonly Node _root;
 
-    public EntityQuadtree(Rectangle bounds, int capacity = 8, int maxDepth = 6)
+    public TownQuadtree(Rectangle bounds, int capacity = 8, int maxDepth = 6)
     {
         _capacity = capacity;
         _maxDepth = maxDepth;
@@ -38,7 +37,6 @@ public sealed class EntityQuadtree
     private static void Clear(Node node)
     {
         node.Items.Clear();
-        node.SubtreeCount = 0;
         if (node.Children == null)
         {
             return;
@@ -50,28 +48,27 @@ public sealed class EntityQuadtree
         }
     }
 
-    public void Insert(Entity entity)
+    public void Insert(Town town)
     {
-        Insert(_root, entity, 0);
+        Insert(_root, town, 0);
     }
 
-    private bool Insert(Node node, Entity entity, int depth)
+    private void Insert(Node node, Town town, int depth)
     {
-        var px = (int)entity.Position.X;
-        var py = (int)entity.Position.Y;
+        var px = (int)town.Position.X;
+        var py = (int)town.Position.Y;
 
         if (!node.Bounds.Contains(px, py))
         {
-            return false;
+            return;
         }
 
         if (node.Children == null)
         {
             if (node.Items.Count < _capacity || depth >= _maxDepth || node.Bounds.Width <= 2 || node.Bounds.Height <= 2)
             {
-                node.Items.Add(entity);
-                node.SubtreeCount++;
-                return true;
+                node.Items.Add(town);
+                return;
             }
 
             Subdivide(node);
@@ -83,18 +80,13 @@ public sealed class EntityQuadtree
             {
                 if (child.Bounds.Contains(px, py))
                 {
-                    if (Insert(child, entity, depth + 1))
-                    {
-                        node.SubtreeCount++;
-                        return true;
-                    }
+                    Insert(child, town, depth + 1);
+                    return;
                 }
             }
         }
 
-        node.Items.Add(entity);
-        node.SubtreeCount++;
-        return true;
+        node.Items.Add(town);
     }
 
     private void Subdivide(Node node)
@@ -119,30 +111,25 @@ public sealed class EntityQuadtree
         };
     }
 
-    public void QueryRange(Rectangle range, List<Entity> results)
+    public void QueryRange(Rectangle range, List<Town> results)
     {
         QueryRange(_root, range, results);
     }
 
-    private static void QueryRange(Node node, Rectangle range, List<Entity> results)
+    private static void QueryRange(Node node, Rectangle range, List<Town> results)
     {
-        if (node.SubtreeCount == 0)
-        {
-            return;
-        }
-
         if (!node.Bounds.Intersects(range))
         {
             return;
         }
 
-        foreach (var entity in node.Items)
+        foreach (var town in node.Items)
         {
-            var px = (int)entity.Position.X;
-            var py = (int)entity.Position.Y;
+            var px = (int)town.Position.X;
+            var py = (int)town.Position.Y;
             if (range.Contains(px, py))
             {
-                results.Add(entity);
+                results.Add(town);
             }
         }
 
@@ -154,31 +141,6 @@ public sealed class EntityQuadtree
         foreach (var child in node.Children)
         {
             QueryRange(child, range, results);
-        }
-    }
-
-    public void CollectNodeBounds(List<Rectangle> bounds)
-    {
-        CollectNodeBounds(_root, bounds);
-    }
-
-    private static void CollectNodeBounds(Node node, List<Rectangle> bounds)
-    {
-        if (node.SubtreeCount == 0)
-        {
-            return;
-        }
-
-        bounds.Add(node.Bounds);
-
-        if (node.Children == null)
-        {
-            return;
-        }
-
-        foreach (var child in node.Children)
-        {
-            CollectNodeBounds(child, bounds);
         }
     }
 }

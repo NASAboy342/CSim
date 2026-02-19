@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using CSim.Civilizations;
 using CSim.Entities;
 using CSim.Input;
@@ -29,6 +30,9 @@ public class Game1 : Game
 
     private EntityQuadtree _entityQuadtree = null!;
     private readonly List<Entity> _entityQueryResults = new();
+    private ResourceQuadtree _resourceQuadtree = null!;
+    private TownQuadtree _townQuadtree = null!;
+    private readonly List<Town> _townQueryResults = new();
     private readonly List<Rectangle> _quadtreeDebugBounds = new();
     private Rectangle _quadtreeToggleButtonBounds;
     private bool _showQuadtree;
@@ -48,6 +52,9 @@ public class Game1 : Game
 
     private SpriteFont _font = null!;
     private Texture2D _uiPixel = null!;
+    private Texture2D? _treeTexture;
+    private Texture2D? _humanHouseTexture;
+    private Texture2D? _orcHouseTexture;
 
     private sealed class ToolButton
     {
@@ -80,6 +87,23 @@ public class Game1 : Game
 
     private const int TileSize = 8;
 
+    private int _resourceQuadtreeUpdateCounter;
+
+    private struct EntityContext
+    {
+        public SettlementSite? NearestSite;
+        public float NearestSiteDistSq;
+
+        public Entity? NearestEnemy;
+        public float NearestEnemyDistSq;
+
+        public int NearbyFriendCount;
+        public int NearbyEnemyCount;
+
+        public Town? NearestFriendlyTown;
+        public float NearestTownDistSq;
+    }
+
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -93,8 +117,10 @@ public class Game1 : Game
         _graphics.PreferredBackBufferHeight = 720;
         _graphics.ApplyChanges();
 
-        var tilesX = _graphics.PreferredBackBufferWidth / TileSize;
-        var tilesY = _graphics.PreferredBackBufferHeight / TileSize;
+        // Make the world much larger than the visible screen area by
+        // using a grid that is 10x wider and taller than the viewport.
+        var tilesX = (_graphics.PreferredBackBufferWidth / TileSize) * 10;
+        var tilesY = (_graphics.PreferredBackBufferHeight / TileSize) * 10;
 
         _worldManager = new WorldManager(tilesX, tilesY);
         _inputManager = new InputManager();
@@ -105,6 +131,8 @@ public class Game1 : Game
         var worldPixelHeight = tilesY * TileSize;
         var worldBounds = new Rectangle(0, 0, worldPixelWidth, worldPixelHeight);
         _entityQuadtree = new EntityQuadtree(worldBounds);
+        _resourceQuadtree = new ResourceQuadtree(worldBounds);
+        _townQuadtree = new TownQuadtree(worldBounds);
 
         _cameraPosition = Vector2.Zero;
         _cameraZoom = 1f;
@@ -115,10 +143,9 @@ public class Game1 : Game
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-        _worldRenderer = new WorldRenderer(_worldManager, GraphicsDevice, TileSize);
+        _worldRenderer = new WorldRenderer(_worldManager, GraphicsDevice, TileSize, null);
         _entityRenderer = new EntityRenderer(GraphicsDevice);
-        _townRenderer = new TownRenderer(GraphicsDevice);
+        _townRenderer = new TownRenderer(GraphicsDevice, null, null);
 
         _font = Content.Load<SpriteFont>("Fonts/Default");
         _hud = new Hud(_font);
@@ -131,9 +158,7 @@ public class Game1 : Game
 
         _quadtreeToggleButtonBounds = new Rectangle(8, 60, 96, 24);
 
-        // Load entity textures for races that have custom sprites.
-        TryLoadEntityTexture("Human.png", RaceType.Human);
-        TryLoadEntityTexture("Orc.png", RaceType.Orc);
+        // Do not load any entity textures; units will render as simple shapes.
 
     }
 
@@ -279,6 +304,15 @@ public class Game1 : Game
 
         RebuildEntityQuadtree();
 
+        _resourceQuadtreeUpdateCounter++;
+        if (_resourceQuadtreeUpdateCounter >= 10)
+        {
+            RebuildResourceQuadtree();
+            _resourceQuadtreeUpdateCounter = 0;
+        }
+
+        RebuildTownQuadtree();
+
         ResolveCombat();
 
         UpdateEntityBehaviors(gameTime);
@@ -310,9 +344,19 @@ public class Game1 : Game
         var cameraTransform = Matrix.CreateTranslation(-_cameraPosition.X, -_cameraPosition.Y, 0f) *
                               Matrix.CreateScale(_cameraZoom, _cameraZoom, 1f);
 
+        // Compute the visible world rectangle in world coordinates for
+        // culling tile rendering.
+        var viewWidthWorld = GraphicsDevice.Viewport.Width / _cameraZoom;
+        var viewHeightWorld = GraphicsDevice.Viewport.Height / _cameraZoom;
+        var visibleWorld = new Rectangle(
+            (int)_cameraPosition.X,
+            (int)_cameraPosition.Y,
+            (int)Math.Ceiling(viewWidthWorld),
+            (int)Math.Ceiling(viewHeightWorld));
+
         // World rendering with camera transform.
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: cameraTransform);
-        _worldRenderer.Draw(_spriteBatch);
+        _worldRenderer.Draw(_spriteBatch, visibleWorld);
         _townRenderer.Draw(_spriteBatch, _townManager);
         DrawSettlementSites();
         _entityRenderer.Draw(_spriteBatch, _entities);
@@ -432,7 +476,16 @@ public class Game1 : Game
             // within the same attack radius.
             if (bestTarget == null)
             {
-                foreach (var town in _townManager.Towns)
+                _townQueryResults.Clear();
+                var townQueryRect = new Rectangle(
+                    (int)(attacker.Position.X - attackRadius),
+                    (int)(attacker.Position.Y - attackRadius),
+                    (int)(attackRadius * 2f),
+                    (int)(attackRadius * 2f));
+
+                _townQuadtree.QueryRange(townQueryRect, _townQueryResults);
+
+                foreach (var town in _townQueryResults)
                 {
                     if (town.Race == attacker.Race || town.IsDestroyed)
                     {
@@ -517,7 +570,16 @@ public class Game1 : Game
         Town? bestTown = null;
         var bestTownDistSq = maxSelectDistanceSq;
 
-        foreach (var town in _townManager.Towns)
+        _townQueryResults.Clear();
+        var townQueryRect = new Rectangle(
+            (int)(mouseWorld.X - maxSelectDistance),
+            (int)(mouseWorld.Y - maxSelectDistance),
+            (int)(maxSelectDistance * 2f),
+            (int)(maxSelectDistance * 2f));
+
+        _townQuadtree.QueryRange(townQueryRect, _townQueryResults);
+
+        foreach (var town in _townQueryResults)
         {
             var distSq = Vector2.DistanceSquared(mouseWorld, town.Position);
             if (distSq < bestTownDistSq)
@@ -598,7 +660,43 @@ public class Game1 : Game
         }
     }
 
-    private void TryLoadEntityTexture(string fileName, RaceType race)
+    private void RebuildResourceQuadtree()
+    {
+        _resourceQuadtree.Clear();
+
+        for (var x = 0; x < _worldManager.Width; x++)
+        {
+            for (var y = 0; y < _worldManager.Height; y++)
+            {
+                var tile = _worldManager.Tiles[x, y];
+                if (tile.Resource == ResourceType.None || tile.ResourceAmount <= 0)
+                {
+                    continue;
+                }
+
+                var worldPos = new Vector2((x + 0.5f) * TileSize, (y + 0.5f) * TileSize);
+                _resourceQuadtree.Insert(new ResourceQuadtree.ResourcePoint(worldPos));
+            }
+        }
+    }
+
+    private void RebuildTownQuadtree()
+    {
+        _townQuadtree.Clear();
+
+        for (var i = 0; i < _townManager.Towns.Count; i++)
+        {
+            var town = _townManager.Towns[i];
+            if (town.IsDestroyed)
+            {
+                continue;
+            }
+
+            _townQuadtree.Insert(town);
+        }
+    }
+
+    private Texture2D? TryLoadTextureFromAssets(string fileName)
     {
         try
         {
@@ -626,16 +724,26 @@ public class Game1 : Game
 
             if (existing == null)
             {
-                return;
+                return null;
             }
 
             using var stream = File.OpenRead(existing);
             var texture = Texture2D.FromStream(GraphicsDevice, stream);
-            _entityRenderer.SetRaceTexture(race, texture);
+            return texture;
         }
         catch
         {
-            // Ignore texture load failures; units will fall back to colored squares.
+            // Ignore texture load failures; callers will fall back to defaults.
+            return null;
+        }
+    }
+
+    private void TryLoadEntityTexture(string fileName, RaceType race)
+    {
+        var texture = TryLoadTextureFromAssets(fileName);
+        if (texture != null)
+        {
+            _entityRenderer.SetRaceTexture(race, texture);
         }
     }
 
@@ -665,13 +773,29 @@ public class Game1 : Game
 
         const float healRadius = 32f;
         var healRadiusSq = healRadius * healRadius;
+        var entityCount = _entities.Count;
+        if (entityCount == 0)
+        {
+            return;
+        }
 
-        for (var i = 0; i < _entities.Count; i++)
+        var contexts = new EntityContext[entityCount];
+
+        Parallel.For(0, entityCount, i =>
         {
             var entity = _entities[i];
 
-            SettlementSite? nearestSite = null;
-            var nearestSiteDistSq = float.MaxValue;
+            var ctx = new EntityContext
+            {
+                NearestSite = null,
+                NearestSiteDistSq = float.MaxValue,
+                NearestEnemy = null,
+                NearestEnemyDistSq = visionRadiusSq,
+                NearbyFriendCount = 0,
+                NearbyEnemyCount = 0,
+                NearestFriendlyTown = null,
+                NearestTownDistSq = maxTownDistanceSq
+            };
 
             foreach (var site in _settlementSites)
             {
@@ -681,20 +805,12 @@ public class Game1 : Game
                 }
 
                 var distSqToSite = Vector2.DistanceSquared(entity.Position, site.Position);
-                if (distSqToSite < nearestSiteDistSq)
+                if (distSqToSite < ctx.NearestSiteDistSq)
                 {
-                    nearestSiteDistSq = distSqToSite;
-                    nearestSite = site;
+                    ctx.NearestSiteDistSq = distSqToSite;
+                    ctx.NearestSite = site;
                 }
             }
-
-            Entity? nearestEnemy = null;
-            var nearestEnemyDistSq = visionRadiusSq;
-
-            var nearbyFriendCount = 0;
-            var nearbyEnemyCount = 0;
-
-            _entityQueryResults.Clear();
 
             var neighborRect = new Rectangle(
                 (int)(entity.Position.X - visionRadius),
@@ -702,9 +818,10 @@ public class Game1 : Game
                 (int)(visionRadius * 2f),
                 (int)(visionRadius * 2f));
 
-            _entityQuadtree.QueryRange(neighborRect, _entityQueryResults);
+            var entityResults = new List<Entity>();
+            _entityQuadtree.QueryRange(neighborRect, entityResults);
 
-            foreach (var other in _entityQueryResults)
+            foreach (var other in entityResults)
             {
                 if (ReferenceEquals(other, entity) || other.Health <= 0f)
                 {
@@ -717,28 +834,35 @@ public class Game1 : Game
                 {
                     if (distSq <= supportRadiusSq)
                     {
-                        nearbyFriendCount++;
+                        ctx.NearbyFriendCount++;
                     }
                 }
                 else
                 {
-                    if (distSq < nearestEnemyDistSq)
+                    if (distSq < ctx.NearestEnemyDistSq)
                     {
-                        nearestEnemyDistSq = distSq;
-                        nearestEnemy = other;
+                        ctx.NearestEnemyDistSq = distSq;
+                        ctx.NearestEnemy = other;
                     }
 
                     if (distSq <= supportRadiusSq)
                     {
-                        nearbyEnemyCount++;
+                        ctx.NearbyEnemyCount++;
                     }
                 }
             }
 
-            Town? nearestFriendlyTown = null;
-            var nearestTownDistSq = maxTownDistanceSq;
+            var townSearchRadius = (float)Math.Sqrt(maxTownDistanceSq);
+            var townQueryRect = new Rectangle(
+                (int)(entity.Position.X - townSearchRadius),
+                (int)(entity.Position.Y - townSearchRadius),
+                (int)(townSearchRadius * 2f),
+                (int)(townSearchRadius * 2f));
 
-            foreach (var town in _townManager.Towns)
+            var townResults = new List<Town>();
+            _townQuadtree.QueryRange(townQueryRect, townResults);
+
+            foreach (var town in townResults)
             {
                 if (town.Race != entity.Race)
                 {
@@ -746,12 +870,32 @@ public class Game1 : Game
                 }
 
                 var distSq = Vector2.DistanceSquared(entity.Position, town.Position);
-                if (distSq < nearestTownDistSq)
+                if (distSq < ctx.NearestTownDistSq)
                 {
-                    nearestTownDistSq = distSq;
-                    nearestFriendlyTown = town;
+                    ctx.NearestTownDistSq = distSq;
+                    ctx.NearestFriendlyTown = town;
                 }
             }
+
+            contexts[i] = ctx;
+        });
+
+        for (var i = 0; i < entityCount; i++)
+        {
+            var entity = _entities[i];
+
+            var context = contexts[i];
+            var nearestSite = context.NearestSite;
+            var nearestSiteDistSq = context.NearestSiteDistSq;
+
+            var nearestEnemy = context.NearestEnemy;
+            var nearestEnemyDistSq = context.NearestEnemyDistSq;
+
+            var nearbyFriendCount = context.NearbyFriendCount;
+            var nearbyEnemyCount = context.NearbyEnemyCount;
+
+            var nearestFriendlyTown = context.NearestFriendlyTown;
+            var nearestTownDistSq = context.NearestTownDistSq;
 
             var outnumbered = nearbyEnemyCount > nearbyFriendCount + 1;
 
@@ -919,7 +1063,10 @@ public class Game1 : Game
                         // walk out toward a nearby resource patch.
                         if (!onResource && nearestTownDistSq <= healRadiusSq)
                         {
-                            if (TryFindNearbyResourceAroundTown(nearestFriendlyTown, out var targetWorldPos))
+                            const int searchRadiusTiles = 20;
+                            var radiusWorld = searchRadiusTiles * TileSize;
+
+                            if (TryFindNearbyResource(entity.Position, radiusWorld, out var targetWorldPos))
                             {
                                 var toRes = targetWorldPos - entity.Position;
                                 entity.SetDirectedMovement(toRes, chaseDuration * 2f);
@@ -930,13 +1077,14 @@ public class Game1 : Game
             }
         }
 
+        var worldWidthPixels = _worldManager.Width * TileSize;
+        var worldHeightPixels = _worldManager.Height * TileSize;
+        var maxWorldPosition = new Vector2(worldWidthPixels - 1, worldHeightPixels - 1);
+
         foreach (var entity in _entities)
         {
             entity.Update(gameTime);
-            entity.Position = Vector2.Clamp(
-                entity.Position,
-                Vector2.Zero,
-                new Vector2(_graphics.PreferredBackBufferWidth - 1, _graphics.PreferredBackBufferHeight - 1));
+            entity.Position = Vector2.Clamp(entity.Position, Vector2.Zero, maxWorldPosition);
         }
     }
 
@@ -960,47 +1108,29 @@ public class Game1 : Game
         }
     }
 
-    private bool TryFindNearbyResourceAroundTown(Town town, out Vector2 worldPosition)
+    private bool TryFindNearbyResource(Vector2 center, float radiusWorld, out Vector2 worldPosition)
     {
-        const int searchRadiusTiles = 20;
+        var queryRect = new Rectangle(
+            (int)(center.X - radiusWorld),
+            (int)(center.Y - radiusWorld),
+            (int)(radiusWorld * 2f),
+            (int)(radiusWorld * 2f));
 
-        var tileCenterX = (int)(town.Position.X / TileSize);
-        var tileCenterY = (int)(town.Position.Y / TileSize);
+        var results = new List<ResourceQuadtree.ResourcePoint>();
+        _resourceQuadtree.QueryRange(queryRect, results);
 
         var bestDistSq = float.MaxValue;
         var found = false;
-        worldPosition = town.Position;
+        worldPosition = center;
 
-        for (var dx = -searchRadiusTiles; dx <= searchRadiusTiles; dx++)
+        foreach (var point in results)
         {
-            var tx = tileCenterX + dx;
-            if (tx < 0 || tx >= _worldManager.Width)
+            var distSq = Vector2.DistanceSquared(point.Position, center);
+            if (distSq < bestDistSq)
             {
-                continue;
-            }
-
-            for (var dy = -searchRadiusTiles; dy <= searchRadiusTiles; dy++)
-            {
-                var ty = tileCenterY + dy;
-                if (ty < 0 || ty >= _worldManager.Height)
-                {
-                    continue;
-                }
-
-                var tile = _worldManager.Tiles[tx, ty];
-                if (tile.Resource == ResourceType.None || tile.ResourceAmount <= 0)
-                {
-                    continue;
-                }
-
-                var worldPos = new Vector2((tx + 0.5f) * TileSize, (ty + 0.5f) * TileSize);
-                var distSq = Vector2.DistanceSquared(worldPos, town.Position);
-                if (distSq < bestDistSq)
-                {
-                    bestDistSq = distSq;
-                    worldPosition = worldPos;
-                    found = true;
-                }
+                bestDistSq = distSq;
+                worldPosition = point.Position;
+                found = true;
             }
         }
 

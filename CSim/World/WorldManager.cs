@@ -13,6 +13,8 @@ public sealed class WorldManager
     private readonly int _seaLevel;
     private readonly Random _random = new();
 
+    private int _regenCursor;
+
     public WorldManager(int width, int height)
     {
         Width = width;
@@ -96,26 +98,26 @@ public sealed class WorldManager
 
                 if (terrain == TerrainType.Grass)
                 {
-                    if (roll < 0.18)
+                    if (roll < 0.12)
                     {
                         tile.Resource = ResourceType.Tree;
-                        tile.ResourceAmount = _random.Next(3, 8);
+                        tile.ResourceAmount = _random.Next(1, 4); // 1–3
                     }
                 }
                 else if (terrain == TerrainType.Mountain)
                 {
-                    if (roll < 0.22)
+                    if (roll < 0.15)
                     {
                         tile.Resource = ResourceType.Rock;
-                        tile.ResourceAmount = _random.Next(4, 10);
+                        tile.ResourceAmount = _random.Next(1, 4); // 1–3
                     }
                 }
                 else if (terrain == TerrainType.Water)
                 {
-                    if (roll < 0.12)
+                    if (roll < 0.08)
                     {
                         tile.Resource = ResourceType.Fish;
-                        tile.ResourceAmount = _random.Next(5, 12);
+                        tile.ResourceAmount = _random.Next(1, 5); // 1–4
                     }
                 }
 
@@ -131,67 +133,84 @@ public sealed class WorldManager
 
         var delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        // We don't want to touch every tile every frame with heavy logic, so
-        // use low probabilities and cheap checks.
-        for (var x = 0; x < Width; x++)
+        // To keep performance reasonable on very large worlds, only process
+        // a subset of tiles each frame and scale the effective delta so the
+        // average regrowth rate stays similar.
+        var totalTiles = Width * Height;
+        const int regenTilesPerFrame = 5000;
+        var tilesToProcess = Math.Min(regenTilesPerFrame, totalTiles);
+        if (tilesToProcess <= 0)
         {
-            for (var y = 0; y < Height; y++)
-            {
-                var tile = Tiles[x, y];
+            return;
+        }
 
-                // Tree regrowth on grass: very small chance for an empty
-                // grass tile to sprout a new tree, and existing trees can
-                // very slowly gain more resource units.
-                if (tile.Terrain == TerrainType.Grass)
+        var scale = totalTiles / (float)tilesToProcess;
+        var effectiveDelta = delta * scale;
+
+        for (var i = 0; i < tilesToProcess; i++)
+        {
+            var index = _regenCursor++;
+            if (_regenCursor >= totalTiles)
+            {
+                _regenCursor = 0;
+            }
+
+            var x = index % Width;
+            var y = index / Width;
+            var tile = Tiles[x, y];
+
+            // Tree regrowth on grass: very small chance for an empty
+            // grass tile to sprout a new tree, and existing trees can
+            // very slowly gain more resource units.
+            if (tile.Terrain == TerrainType.Grass)
+            {
+                if (tile.Resource == ResourceType.None)
                 {
-                    if (tile.Resource == ResourceType.None)
+                    // About a 0.01% chance per second for a tree to grow
+                    // on an empty grass tile.
+                    if (_random.NextDouble() < 0.0001 * effectiveDelta)
                     {
-                        // About a 0.01% chance per second for a tree to grow
-                        // on an empty grass tile.
-                        if (_random.NextDouble() < 0.0001 * delta)
-                        {
-                            tile.Resource = ResourceType.Tree;
-                            tile.ResourceAmount = _random.Next(2, 5);
-                        }
+                        tile.Resource = ResourceType.Tree;
+                        tile.ResourceAmount = _random.Next(2, 5);
                     }
-                    else if (tile.Resource == ResourceType.Tree && tile.ResourceAmount > 0)
+                }
+                else if (tile.Resource == ResourceType.Tree && tile.ResourceAmount > 0)
+                {
+                    // Existing trees very slowly regenerate wood/food.
+                    if (_random.NextDouble() < 0.0002 * effectiveDelta)
                     {
-                        // Existing trees very slowly regenerate wood/food.
-                        if (_random.NextDouble() < 0.0002 * delta)
+                        tile.ResourceAmount += 1;
+                        if (tile.ResourceAmount > 10)
                         {
-                            tile.ResourceAmount += 1;
-                            if (tile.ResourceAmount > 10)
-                            {
-                                tile.ResourceAmount = 10;
-                            }
+                            tile.ResourceAmount = 10;
                         }
                     }
                 }
+            }
 
-                // Fish population recovery in water.
-                if (tile.Terrain == TerrainType.Water)
+            // Fish population recovery in water.
+            if (tile.Terrain == TerrainType.Water)
+            {
+                if (tile.Resource == ResourceType.Fish && tile.ResourceAmount > 0)
                 {
-                    if (tile.Resource == ResourceType.Fish && tile.ResourceAmount > 0)
+                    // Existing fish schools slowly grow.
+                    if (_random.NextDouble() < 0.0003 * effectiveDelta)
                     {
-                        // Existing fish schools slowly grow.
-                        if (_random.NextDouble() < 0.0003 * delta)
+                        tile.ResourceAmount += 1;
+                        if (tile.ResourceAmount > 15)
                         {
-                            tile.ResourceAmount += 1;
-                            if (tile.ResourceAmount > 15)
-                            {
-                                tile.ResourceAmount = 15;
-                            }
+                            tile.ResourceAmount = 15;
                         }
                     }
-                    else if (tile.Resource == ResourceType.None)
+                }
+                else if (tile.Resource == ResourceType.None)
+                {
+                    // Very rare chance for a new fish school to appear
+                    // on an empty water tile.
+                    if (_random.NextDouble() < 0.00005 * effectiveDelta)
                     {
-                        // Very rare chance for a new fish school to appear
-                        // on an empty water tile.
-                        if (_random.NextDouble() < 0.00005 * delta)
-                        {
-                            tile.Resource = ResourceType.Fish;
-                            tile.ResourceAmount = _random.Next(3, 7);
-                        }
+                        tile.Resource = ResourceType.Fish;
+                        tile.ResourceAmount = _random.Next(3, 7);
                     }
                 }
             }

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tide &amp; Tackle</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <span class="eyebrow">Canvas Browser Fishing Game</span>
+        <h1>Tide &amp; Tackle</h1>
+        <p>Start with a rough pole, learn the rhythm of the bite, and grow into the angler who lands monsters from open water.</p>
+      </div>
+      <div class="headline-stats">
+        <div class="headline-chip">
+          <span class="chip-label">Money</span>
+          <strong id="moneyValue">$0</strong>
+        </div>
+        <div class="headline-chip">
+          <span class="chip-label">Level</span>
+          <strong id="levelValue">1</strong>
+        </div>
+        <div class="headline-chip">
+          <span class="chip-label">Streak</span>
+          <strong id="streakValue">0x</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <aside class="panel left-panel">
+        <section class="card overview-card">
+          <div class="card-header">
+            <span class="card-kicker">Setup</span>
+            <h2>Current Rig</h2>
+          </div>
+          <dl class="setup-grid">
+            <div>
+              <dt>Location</dt>
+              <dd id="currentLocation">Willow Pond</dd>
+            </div>
+            <div>
+              <dt>Rod</dt>
+              <dd id="currentRod">Twig Pole</dd>
+            </div>
+            <div>
+              <dt>Bait</dt>
+              <dd id="currentBait">Worms</dd>
+            </div>
+            <div>
+              <dt>Creel</dt>
+              <dd id="capacityValue">0/5</dd>
+            </div>
+          </dl>
+
+          <div class="xp-card">
+            <div class="xp-meta">
+              <span>Angler XP</span>
+              <strong id="xpText">0 / 60</strong>
+            </div>
+            <div class="xp-track">
+              <div class="xp-fill" id="xpFill"></div>
+            </div>
+          </div>
+
+          <p class="next-goal" id="nextGoalText">Cast to start building cash for your first upgrade.</p>
+        </section>
+
+        <section class="card controls-card">
+          <div class="card-header">
+            <span class="card-kicker">Controls</span>
+            <h2>Flow</h2>
+          </div>
+          <ul class="tips-list">
+            <li>Hold the action button or space bar, then release to cast.</li>
+            <li>When the bobber jerks, hit the action fast to hook the fish.</li>
+            <li>During the fight, hold to lift the reel band and keep the fish inside it.</li>
+          </ul>
+          <button id="soundToggle" class="button ghost full-width" type="button">Sound: On</button>
+        </section>
+
+        <section class="card journal-card">
+          <div class="card-header">
+            <span class="card-kicker">Journal</span>
+            <h2>Catch Log</h2>
+          </div>
+          <div class="journal-stats">
+            <div>
+              <span>Species Found</span>
+              <strong id="discoveredValue">0 / 0</strong>
+            </div>
+            <div>
+              <span>Total Caught</span>
+              <strong id="totalCaughtValue">0</strong>
+            </div>
+            <div>
+              <span>Best Catch</span>
+              <strong id="bestCatchValue">None yet</strong>
+            </div>
+          </div>
+          <ul class="recent-list" id="recentList"></ul>
+        </section>
+      </aside>
+
+      <section class="play-panel">
+        <div class="canvas-frame" id="canvasFrame">
+          <canvas id="gameCanvas" width="960" height="540" aria-label="Fishing game scene"></canvas>
+
+          <div class="canvas-hud">
+            <div class="state-banner" id="stateMessage">Hold to cast.</div>
+            <div class="charge-meter" id="chargeMeter" aria-hidden="true">
+              <div class="charge-fill" id="chargeFill"></div>
+            </div>
+          </div>
+
+          <div class="catch-card hidden" id="catchCard">
+            <canvas id="catchPreviewCanvas" width="200" height="90" aria-hidden="true"></canvas>
+            <div class="catch-copy">
+              <span class="catch-kicker" id="catchMeta">Rare Catch</span>
+              <h3 id="catchName">Mirror Koi</h3>
+              <p id="catchDetail">3.2 kg • Prime • Willow Pond</p>
+              <strong id="catchValueText">$72 value • 46 XP</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-footer">
+          <button id="actionButton" class="button primary grow" type="button">Hold to Cast</button>
+          <button id="sellButton" class="button secondary" type="button">Sell Creel</button>
+        </div>
+      </section>
+
+      <aside class="panel right-panel">
+        <section class="card inventory-card">
+          <div class="card-header split-header">
+            <div>
+              <span class="card-kicker">Inventory</span>
+              <h2>Creel</h2>
+            </div>
+            <strong id="inventoryValue">$0</strong>
+          </div>
+          <ul class="inventory-list" id="inventoryList"></ul>
+        </section>
+
+        <section class="card shop-card">
+          <div class="card-header">
+            <span class="card-kicker">Progression</span>
+            <h2>Tackle Shop</h2>
+          </div>
+          <div class="shop-content" id="shopContent"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <script src="game.js"></script>
+</body>
+</html>

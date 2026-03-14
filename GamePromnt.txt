@@ -1,0 +1,221 @@
+You are a world-class game developer, systems architect, and simulation designer who creates high-quality, production-ready games. Your output must be complete, coherent, and free from unfinished systems or placeholder ideas.
+
+Design a deep, highly addictive strategy simulation game inspired by Foundation based on the universe created by Isaac Asimov.
+
+The player assumes the role of a galactic warlord expanding their power across a vast galaxy. Multiple AI-controlled warlords compete simultaneously for territory, resources, influence, and survival.
+
+The game must emphasize emergent gameplay, where complex and unpredictable situations arise from interacting systems rather than scripted events.
+
+Core Concept
+
+The galaxy is a living simulation composed of:
+
+Thousands of star systems
+
+Many competing factions and warlords
+
+Dynamic economies and trade routes
+
+Expanding civilizations
+
+Political alliances and betrayals
+
+Large-scale wars
+
+Over time the simulation must evolve into a massive, living galaxy with unpredictable outcomes.
+
+Core Gameplay Systems
+
+Design complete mechanics for:
+
+1. Galactic Expansion
+
+Colonizing planets
+
+Managing planetary development
+
+Expanding borders and influence
+
+Strategic choke points and sectors
+
+2. Economy and Resources
+
+Resource extraction
+
+Interstellar trade networks
+
+Supply chains
+
+Economic collapse and growth cycles
+
+3. Warfare
+
+Fleet composition and ship classes
+
+Strategic fleet movement
+
+Tactical space battles
+
+Attrition, logistics, and reinforcement systems
+
+4. Diplomacy
+
+Alliances and rivalries
+
+Negotiation systems
+
+Betrayals and shifting political landscapes
+
+Reputation and trust systems
+
+5. Technology
+
+Research trees
+
+Scientific breakthroughs
+
+Technological asymmetry between factions
+
+6. Espionage
+
+Intelligence gathering
+
+Sabotage
+
+Hidden operations
+
+7. Galactic Events
+
+Rebellions
+
+Economic crashes
+
+Alien discoveries
+
+Political upheaval
+
+Advanced AI Design
+
+The AI warlords must be intelligent and strategic, not simple scripted enemies.
+
+Each AI faction should have:
+
+Unique personalities and long-term goals
+
+Strategic planning abilities
+
+Adaptive responses to the player's actions
+
+Diplomacy and manipulation strategies
+
+Independent conflicts with other AI factions
+
+The AI must create a believable galactic political ecosystem.
+
+Emergent Simulation
+
+The simulation must allow:
+
+Unexpected alliances
+
+Massive wars between AI factions
+
+Economic booms and collapses
+
+Rise and fall of galactic powers
+
+The player should feel like they are part of a living galaxy rather than controlling a scripted game.
+
+Procedural Generation
+
+The galaxy must be procedurally generated including:
+
+Star systems
+
+Planet types
+
+Resource distributions
+
+Faction starting positions
+
+Trade networks
+
+Every playthrough must feel different.
+
+Visual and Asset Design
+
+Since no assets will be provided, generate original concepts for:
+
+Spaceships and fleet classes
+
+Planets and star systems
+
+Faction identities and styles
+
+Galactic map interface
+
+UI and strategy dashboards
+
+The visual design should be clean, futuristic, and readable for large-scale strategy gameplay.
+
+Performance and Scalability Requirements
+
+Because the simulation can grow extremely large over long play sessions, the architecture must prioritize performance and scalability.
+
+Design the simulation with:
+
+Multithreading
+
+Parallel simulation systems
+
+Background AI processing
+
+Concurrent economy and logistics simulation
+
+Efficient Data Structures
+
+Spatial partitioning for the galaxy map
+
+Event-driven simulation where possible
+
+Avoid unnecessary full-world updates
+
+Simulation Optimization
+
+Tick-based simulation updates
+
+Level-of-detail simulation (distant systems simulate at lower resolution)
+
+Entity batching
+
+Long-Term Stability
+
+The simulation must remain stable and performant even with:
+
+Thousands of star systems
+
+Hundreds of fleets
+
+Many competing factions
+
+Long play sessions
+
+Deliverables
+
+Provide a complete and professional design including:
+
+Full gameplay loop
+
+Core systems architecture
+
+AI decision-making model
+
+Multithreaded simulation architecture
+
+Procedural generation system
+
+UI layout and visual direction
+
+Example gameplay scenario
+
+The result must feel like a fully realized strategy simulation game ready for development, not a simple concept or prototype.

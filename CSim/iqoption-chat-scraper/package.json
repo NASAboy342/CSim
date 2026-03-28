@@ -1,0 +1,12 @@
+{
+  "name": "iqoption-chat-scraper",
+  "version": "1.0.0",
+  "description": "Real-time IQ Option chat scraper via WebSocket interception",
+  "main": "scrape-chat.js",
+  "scripts": {
+    "start": "node scrape-chat.js"
+  },
+  "dependencies": {
+    "playwright": "^1.42.0"
+  }
+}

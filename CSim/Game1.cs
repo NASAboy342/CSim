@@ -129,9 +129,9 @@ public class Game1 : Game
         _graphics.ApplyChanges();
 
         // Make the world much larger than the visible screen area by
-        // using a grid that is 10x wider and taller than the viewport.
-        var tilesX = (_graphics.PreferredBackBufferWidth / TileSize) * 10;
-        var tilesY = (_graphics.PreferredBackBufferHeight / TileSize) * 10;
+        // using a grid that is 5x wider and taller than the viewport.
+        var tilesX = (_graphics.PreferredBackBufferWidth / TileSize) * 2;
+        var tilesY = (_graphics.PreferredBackBufferHeight / TileSize) * 3;
 
         _worldManager = new WorldManager(tilesX, tilesY);
         _inputManager = new InputManager();

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PipelineBuildEvent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <SourceFile>/Users/pinsopheaktra/Documents/Clones/CSim/CSim/Content/DefaultFont.spritefont</SourceFile>
+  <SourceTime>2026-06-01T22:38:22.928705+07:00</SourceTime>
+  <DestFile>/Users/pinsopheaktra/Documents/Clones/CSim/CSim/Content/bin/DesktopGL/Content/DefaultFont.xnb</DestFile>
+  <DestTime>2026-06-01T22:40:10.927337+07:00</DestTime>
+  <Importer>FontDescriptionImporter</Importer>
+  <ImporterTime>2025-10-20T21:25:32+07:00</ImporterTime>
+  <Processor>FontDescriptionProcessor</Processor>
+  <ProcessorTime>2025-10-20T21:25:32+07:00</ProcessorTime>
+  <Parameters>
+    <Key>PremultiplyAlpha</Key>
+    <Value>True</Value>
+  </Parameters>
+  <Parameters>
+    <Key>TextureFormat</Key>
+    <Value>Compressed</Value>
+  </Parameters>
+  <Dependencies />
+  <BuildAsset />
+  <BuildOutput />
+</PipelineBuildEvent>

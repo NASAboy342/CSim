@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using CSim.Enums;
+using CSim.Model;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -6,24 +9,90 @@ namespace CSim.GameObjects;
 
 public class World
 {
-    public int Width { get; set; } = 2000;
-    public int Height { get; set; } = 1000;
+    public int Width { get; set; } = 500;
+    public int Height { get; set; } = 500;
     public int CellSize { get; set; } = 8;
+    public int Seed { get; set; } = 1337;
+    public float Frequency { get; set; } = 0.02f;
+    public List<List<int>> Noice { get; set; } = new List<List<int>>();
+
+    public World()
+    {
+        GenerateNoice();
+    }
+
+    public void GenerateNoice()
+    {
+        Noice.Clear();
+
+        var noise = new FastNoiseLite(Seed);
+        noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+        noise.SetFrequency(Frequency);
+
+        for (int x = 0; x < Width; x++)
+        {
+            Noice.Add(new List<int>(Height));
+            for (int y = 0; y < Height; y++)
+            {
+                float n = noise.GetNoise(x, y);
+                int brightness = (int)Math.Clamp((n + 1f) * 50f, 0f, 100f);
+                Noice[x].Add(brightness);
+            }
+        }
+    }
 
     public void Draw(SpriteBatch spriteBatch, Texture2D pixel, Rectangle viewBounds)
     {
+        if (Noice.Count == 0)
+        {
+            return;
+        }
+
+        int gridWidth = Noice.Count;
+        int gridHeight = Noice[0].Count;
+
         int startX = Math.Max(0, viewBounds.X / CellSize);
         int startY = Math.Max(0, viewBounds.Y / CellSize);
-        int endX   = Math.Min(Width,  (viewBounds.Right  / CellSize) + 2);
-        int endY   = Math.Min(Height, (viewBounds.Bottom / CellSize) + 2);
+        int endX   = Math.Min(gridWidth,  (viewBounds.Right  / CellSize) + 2);
+        int endY   = Math.Min(gridHeight, (viewBounds.Bottom / CellSize) + 2);
 
         for (int x = startX; x < endX; x++)
         {
             for (int y = startY; y < endY; y++)
             {
                 var rect = new Rectangle(x * CellSize, y * CellSize, CellSize - 1, CellSize - 1);
-                spriteBatch.Draw(pixel, rect, Color.ForestGreen);
+                var elevation = Noice[x][y];
+                var terrainType = GetTerrainType(elevation);
+                spriteBatch.Draw(pixel, rect, terrainType.Color);
             }
+        }
+    }
+
+    private TerrainType GetTerrainType(int elevation)
+    {
+        if (elevation < 40)
+        {
+            return new TerrainType { Type = EnumTerrainType.Water, Color = Color.Blue };
+        }
+        else if (elevation < 43)
+        {
+            return new TerrainType { Type = EnumTerrainType.Sand, Color = Color.SandyBrown };
+        }
+        else if (elevation < 60)
+        {
+            return new TerrainType { Type = EnumTerrainType.Grass, Color = Color.Green };
+        }
+        else if (elevation < 80)
+        {
+            return new TerrainType { Type = EnumTerrainType.Forest, Color = Color.DarkGreen };
+        }
+        else if (elevation < 83)
+        {
+            return new TerrainType { Type = EnumTerrainType.Mountain, Color = Color.Gray };
+        }
+        else
+        {
+            return new TerrainType { Type = EnumTerrainType.Snow, Color = Color.White };
         }
     }
 }

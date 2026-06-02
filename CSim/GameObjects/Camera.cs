@@ -13,7 +13,8 @@ public class Camera
     private float _xSpeed = 0f;
     private bool _isDetectInputX = false;
     private bool _isDetectInputY = false;
-    private float _cameraAcceleration = 100f;
+    private float _cameraAcceleration = 200f;
+    private float _cameraDeceleration = 100f;
 
     public World World { get; set; }
     public Matrix Transform => Matrix.CreateTranslation(-_offset.X, -_offset.Y, 0);
@@ -36,8 +37,8 @@ public class Camera
 
     private void SlowDownCamera(float delta)
     {
-        if (!_isDetectInputX) _xSpeed = _xSpeed > 0 ? Math.Max(0, _xSpeed - _cameraAcceleration * delta) : _xSpeed < 0 ? Math.Min(0, _xSpeed + _cameraAcceleration * delta) : 0f;
-        if (!_isDetectInputY) _ySpeed = _ySpeed > 0 ? Math.Max(0, _ySpeed - _cameraAcceleration * delta) : _ySpeed < 0 ? Math.Min(0, _ySpeed + _cameraAcceleration * delta) : 0f;
+        if (!_isDetectInputX) _xSpeed = _xSpeed > 0 ? Math.Max(0, _xSpeed - _cameraDeceleration * delta) : _xSpeed < 0 ? Math.Min(0, _xSpeed + _cameraDeceleration * delta) : 0f;
+        if (!_isDetectInputY) _ySpeed = _ySpeed > 0 ? Math.Max(0, _ySpeed - _cameraDeceleration * delta) : _ySpeed < 0 ? Math.Min(0, _ySpeed + _cameraDeceleration * delta) : 0f;
     }
 
     private void Move(float delta)

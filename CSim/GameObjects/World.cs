@@ -14,16 +14,17 @@ public class World
     public int CellSize { get; set; } = 8;
     public int Seed { get; set; } = 1337;
     public float Frequency { get; set; } = 0.02f;
-    public List<List<int>> Noice { get; set; } = new List<List<int>>();
+    public List<List<int>> Terrain { get; set; } = new List<List<int>>();
 
     public World()
     {
-        GenerateNoice();
+        Seed = new Random().Next();
+        GenerateTerrain();
     }
 
-    public void GenerateNoice()
+    public void GenerateTerrain()
     {
-        Noice.Clear();
+        Terrain.Clear();
 
         var noise = new FastNoiseLite(Seed);
         noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
@@ -31,25 +32,25 @@ public class World
 
         for (int x = 0; x < Width; x++)
         {
-            Noice.Add(new List<int>(Height));
+            Terrain.Add(new List<int>(Height));
             for (int y = 0; y < Height; y++)
             {
                 float n = noise.GetNoise(x, y);
                 int brightness = (int)Math.Clamp((n + 1f) * 50f, 0f, 100f);
-                Noice[x].Add(brightness);
+                Terrain[x].Add(brightness);
             }
         }
     }
 
     public void Draw(SpriteBatch spriteBatch, Texture2D pixel, Rectangle viewBounds)
     {
-        if (Noice.Count == 0)
+        if (Terrain.Count == 0)
         {
             return;
         }
 
-        int gridWidth = Noice.Count;
-        int gridHeight = Noice[0].Count;
+        int gridWidth = Terrain.Count;
+        int gridHeight = Terrain[0].Count;
 
         int startX = Math.Max(0, viewBounds.X / CellSize);
         int startY = Math.Max(0, viewBounds.Y / CellSize);
@@ -60,8 +61,8 @@ public class World
         {
             for (int y = startY; y < endY; y++)
             {
-                var rect = new Rectangle(x * CellSize, y * CellSize, CellSize - 1, CellSize - 1);
-                var elevation = Noice[x][y];
+                var rect = new Rectangle(x * CellSize, y * CellSize, CellSize, CellSize);
+                var elevation = Terrain[x][y];
                 var terrainType = GetTerrainType(elevation);
                 spriteBatch.Draw(pixel, rect, terrainType.Color);
             }
@@ -70,7 +71,11 @@ public class World
 
     private TerrainType GetTerrainType(int elevation)
     {
-        if (elevation < 40)
+        if (elevation < 37)
+        {
+            return new TerrainType { Type = EnumTerrainType.DeepWater, Color = Color.DarkBlue };
+        }
+        else if (elevation < 40)
         {
             return new TerrainType { Type = EnumTerrainType.Water, Color = Color.Blue };
         }

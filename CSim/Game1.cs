@@ -1,5 +1,6 @@
 ﻿using System;
 using CSim.GameObjects;
+using CSim.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -16,6 +17,8 @@ public class Game1 : Game
     private Texture2D _pixel;
     private int _fPS = 0;
     private SpriteFont _font;
+    private UIToolBar _uiToolBar;
+    private UnitSpawner _unitSpawner;
 
     public Game1()
     {
@@ -43,6 +46,8 @@ public class Game1 : Game
         _world = new World();
         _camera = new Camera(GraphicsDevice.Viewport) { World = _world };
         _font = Content.Load<SpriteFont>("DefaultFont");
+        _uiToolBar = new UIToolBar();
+        _unitSpawner = new UnitSpawner(_world, _uiToolBar, _camera);
     }
 
     protected override void Update(GameTime gameTime)
@@ -52,6 +57,8 @@ public class Game1 : Game
 
         _camera.Update(gameTime);
         _fPS = (int)(1 / gameTime.ElapsedGameTime.TotalSeconds);
+        _uiToolBar.Update(Mouse.GetState());
+        _unitSpawner.Update(Mouse.GetState());
 
         base.Update(gameTime);
     }
@@ -63,6 +70,10 @@ public class Game1 : Game
         _spriteBatch.Begin(transformMatrix: _camera.Transform);
         _world.Draw(_spriteBatch, _pixel, _camera.ViewBounds);
         Drawtext($"FPS: {_fPS}");
+        _spriteBatch.End();
+
+        _spriteBatch.Begin();
+        _uiToolBar.Draw(_spriteBatch, _pixel, _font, Mouse.GetState());
         _spriteBatch.End();
 
         base.Draw(gameTime);

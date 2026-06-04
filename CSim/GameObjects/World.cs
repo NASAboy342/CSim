@@ -15,6 +15,7 @@ public class World
     public int Seed { get; set; } = 1337;
     public float Frequency { get; set; } = 0.02f;
     public List<List<int>> Terrain { get; set; } = new List<List<int>>();
+    public List<Unit> Units { get; set; } = new List<Unit>();
 
     public World()
     {
@@ -67,6 +68,11 @@ public class World
                 spriteBatch.Draw(pixel, rect, terrainType.Color);
             }
         }
+
+        foreach (var unit in Units)
+        {
+            unit.Draw(spriteBatch, pixel);
+        }
     }
 
     private TerrainType GetTerrainType(int elevation)
@@ -99,5 +105,10 @@ public class World
         {
             return new TerrainType { Type = EnumTerrainType.Snow, Color = Color.White };
         }
+    }
+
+    public void AddUnit(Unit newUnit)
+    {
+        Units.Add(newUnit);
     }
 }

@@ -8,7 +8,7 @@ namespace CSim.GameObjects;
 public class Camera
 {
     private Viewport _viewport;
-    private Vector2 _offset = Vector2.Zero;
+    public Vector2 Offset = Vector2.Zero;
     private float _ySpeed = 0f;
     private float _xSpeed = 0f;
     private bool _isDetectInputX = false;
@@ -17,8 +17,8 @@ public class Camera
     private float _cameraDeceleration = 100f;
 
     public World World { get; set; }
-    public Matrix Transform => Matrix.CreateTranslation(-_offset.X, -_offset.Y, 0);
-    public Rectangle ViewBounds => new Rectangle((int)_offset.X, (int)_offset.Y, _viewport.Width, _viewport.Height);
+    public Matrix Transform => Matrix.CreateTranslation(-Offset.X, -Offset.Y, 0);
+    public Rectangle ViewBounds => new Rectangle((int)Offset.X, (int)Offset.Y, _viewport.Width, _viewport.Height);
 
     public Camera(Viewport viewport)
     {
@@ -43,8 +43,8 @@ public class Camera
 
     private void Move(float delta)
     {
-        _offset.X += _xSpeed * delta;
-        _offset.Y += _ySpeed * delta;
+        Offset.X += _xSpeed * delta;
+        Offset.Y += _ySpeed * delta;
     }
 
     private void CheckWorldBound()
@@ -54,14 +54,14 @@ public class Camera
             int worldPixelW = World.Width * World.CellSize;
             int worldPixelH = World.Height * World.CellSize;
 
-            float clampedX = Math.Clamp(_offset.X, 0, Math.Max(0, worldPixelW - _viewport.Width));
-            float clampedY = Math.Clamp(_offset.Y, 0, Math.Max(0, worldPixelH - _viewport.Height));
+            float clampedX = Math.Clamp(Offset.X, 0, Math.Max(0, worldPixelW - _viewport.Width));
+            float clampedY = Math.Clamp(Offset.Y, 0, Math.Max(0, worldPixelH - _viewport.Height));
 
-            if (clampedX != _offset.X) _xSpeed = 0f;
-            if (clampedY != _offset.Y) _ySpeed = 0f;
+            if (clampedX != Offset.X) _xSpeed = 0f;
+            if (clampedY != Offset.Y) _ySpeed = 0f;
 
-            _offset.X = clampedX;
-            _offset.Y = clampedY;
+            Offset.X = clampedX;
+            Offset.Y = clampedY;
         }
     }
 

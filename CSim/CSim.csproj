@@ -28,8 +28,8 @@
     <PackageReference Include="Udun.FastNoiseLite" Version="1.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Enums/" />
     <Folder Include="GameObjects/" />
     <Folder Include="Model/" />
+    <Folder Include="UI/" />
   </ItemGroup>
 </Project>

@@ -50,13 +50,30 @@ public class World
             return;
         }
 
+        DrawTerrain(spriteBatch, pixel, viewBounds);
+        DrawAllUnits(spriteBatch, pixel, viewBounds);
+    }
+
+    private void DrawAllUnits(SpriteBatch spriteBatch, Texture2D pixel, Rectangle viewBounds)
+    {
+        foreach (var unit in Units)
+        {
+            var isUnitOutOfView = unit.Position.X + unit.Width < viewBounds.X || unit.Position.X > viewBounds.Right ||
+                                    unit.Position.Y + unit.Height < viewBounds.Y || unit.Position.Y > viewBounds.Bottom;
+            if (isUnitOutOfView) continue;
+            unit.Draw(spriteBatch, pixel);
+        }
+    }
+
+    private void DrawTerrain(SpriteBatch spriteBatch, Texture2D pixel, Rectangle viewBounds)
+    {
         int gridWidth = Terrain.Count;
         int gridHeight = Terrain[0].Count;
 
         int startX = Math.Max(0, viewBounds.X / CellSize);
         int startY = Math.Max(0, viewBounds.Y / CellSize);
-        int endX   = Math.Min(gridWidth,  (viewBounds.Right  / CellSize) + 2);
-        int endY   = Math.Min(gridHeight, (viewBounds.Bottom / CellSize) + 2);
+        int endX = Math.Min(gridWidth, (viewBounds.Right / CellSize) + 2);
+        int endY = Math.Min(gridHeight, (viewBounds.Bottom / CellSize) + 2);
 
         for (int x = startX; x < endX; x++)
         {
@@ -67,11 +84,6 @@ public class World
                 var terrainType = GetTerrainType(elevation);
                 spriteBatch.Draw(pixel, rect, terrainType.Color);
             }
-        }
-
-        foreach (var unit in Units)
-        {
-            unit.Draw(spriteBatch, pixel);
         }
     }
 
@@ -110,5 +122,13 @@ public class World
     public void AddUnit(Unit newUnit)
     {
         Units.Add(newUnit);
+    }
+
+    internal void Update(GameTime gameTime)
+    {
+        foreach (var unit in Units)
+        {
+            unit.Update(gameTime, this);
+        }
     }
 }

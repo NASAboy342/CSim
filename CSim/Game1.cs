@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using CSim.GameObjects;
 using CSim.UI;
 using Microsoft.Xna.Framework;
@@ -55,13 +56,19 @@ public class Game1 : Game
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
 
+        _world.Update(gameTime);
         _camera.Update(gameTime);
         _fPS = (int)(1 / gameTime.ElapsedGameTime.TotalSeconds);
+        _debugLines.Clear();
+        _debugLines.Add($"FPS: {_fPS}");
+        _debugLines.Add($"Units count: {_world.Units.Count}");
         _uiToolBar.Update(Mouse.GetState());
         _unitSpawner.Update(Mouse.GetState());
 
         base.Update(gameTime);
     }
+
+    private List<string> _debugLines = new List<string>();
 
     protected override void Draw(GameTime gameTime)
     {
@@ -69,7 +76,7 @@ public class Game1 : Game
 
         _spriteBatch.Begin(transformMatrix: _camera.Transform);
         _world.Draw(_spriteBatch, _pixel, _camera.ViewBounds);
-        Drawtext($"FPS: {_fPS}");
+        DrawDebugLogs();
         _spriteBatch.End();
 
         _spriteBatch.Begin();
@@ -79,8 +86,18 @@ public class Game1 : Game
         base.Draw(gameTime);
     }
 
+    private void DrawDebugLogs()
+    {
+        var y = 10;
+        foreach (var line in _debugLines)
+        {
+            Drawtext(line, 10, y:y);
+            y += 2 * y;
+        }
+    }
+
     private void Drawtext(string text = "", int x = 10, int y = 10)
     {
-        _spriteBatch.DrawString(_font, text, new Vector2(-_camera.Transform.Translation.X + x, -_camera.Transform.Translation.Y + y), Color.White);
+        _spriteBatch.DrawString(_font, text, new Vector2(-_camera.Transform.Translation.X + x, -_camera.Transform.Translation.Y + y), Color.White, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
     }
 }

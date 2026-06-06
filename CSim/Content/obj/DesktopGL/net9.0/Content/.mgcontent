@@ -4,7 +4,7 @@
   <Platform>DesktopGL</Platform>
   <Config />
   <SourceFiles>
-    <File>/Users/pinsopheaktra/Documents/Clones/CSim/CSim/Content/DefaultFont.spritefont</File>
+    <File>D:/Clones/CSim/CSim/Content/DefaultFont.spritefont</File>
   </SourceFiles>
   <DestFiles>
     <File xsi:nil="true" />

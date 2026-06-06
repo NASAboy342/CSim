@@ -1,4 +1,5 @@
 using System;
+using CSim.Enums;
 using CSim.UI;
 using Microsoft.Xna.Framework.Input;
 
@@ -23,15 +24,35 @@ public class UnitSpawner
         if (mouseState.LeftButton == ButtonState.Pressed && _isLastSpawnedDone)
         {
             _isLastSpawnedDone = false;
-            var newUnit = new Unit();
-            newUnit.Position = mouseState.Position.ToVector2();
-            newUnit.Position += _camera.Offset;
-            _world.AddUnit(newUnit);
+            switch (_uiToolBar.SelectedTool)
+            {
+                case EnumSelectableTool.Human:
+                    SpawnHuman(mouseState);
+                    break;
+                default:
+                    break;
+            }
         }
 
         if (mouseState.LeftButton == ButtonState.Released)
         {
             _isLastSpawnedDone = true;
         }
+    }
+
+    private void SpawnUnit(MouseState mouseState)
+    {
+        var newUnit = new Unit();
+        newUnit.Position = mouseState.Position.ToVector2();
+        newUnit.Position += _camera.Offset;
+        _world.AddUnit(newUnit);
+    }
+
+    private void SpawnHuman(MouseState mouseState)
+    {
+        var newHuman = new UnitHuman();
+        newHuman.Position = mouseState.Position.ToVector2();
+        newHuman.Position += _camera.Offset;
+        _world.AddUnit(newHuman);
     }
 }

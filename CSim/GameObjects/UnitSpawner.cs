@@ -29,6 +29,9 @@ public class UnitSpawner
                 case EnumSelectableTool.Human:
                     SpawnHuman(mouseState);
                     break;
+                case EnumSelectableTool.Tree:
+                    SpawnTree(mouseState);
+                    break;
                 default:
                     break;
             }
@@ -38,6 +41,14 @@ public class UnitSpawner
         {
             _isLastSpawnedDone = true;
         }
+    }
+
+    private void SpawnTree(MouseState mouseState)
+    {
+        var newTree = new UnitTree();
+        newTree.Position = mouseState.Position.ToVector2();
+        newTree.Position += _camera.Offset;
+        _world.AddUnit(newTree);
     }
 
     private void SpawnUnit(MouseState mouseState)

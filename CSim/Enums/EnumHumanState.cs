@@ -4,5 +4,6 @@ public enum EnumHumanState
 {
     Idle,
     Attacking,
-    Dead
+    Dead,
+    WalkingToTree
 }

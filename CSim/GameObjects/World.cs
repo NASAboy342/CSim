@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CSim.Enums;
+using CSim.Helpers;
 using CSim.Model;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -130,5 +131,19 @@ public class World
         {
             unit.Update(gameTime, this);
         }
+    }
+
+    public List<Unit> GetLocalUnits(Vector2 position)
+    {
+        var localUnits = new List<Unit>();
+        foreach (var unit in Units)
+        {
+            var isUnitLocal = CustomMath.GetDistance(position, unit.Position) < 100f;
+            if (isUnitLocal)
+            {
+                localUnits.Add(unit);
+            }
+        }
+        return localUnits;
     }
 }

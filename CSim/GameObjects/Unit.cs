@@ -11,8 +11,8 @@ public class Unit
     public float Speed { get; set; } = 0f;
     
 
-    public int Width {get; set; } = 5;
-    public int Height {get; set; } = 5;
+    public virtual int Width {get; set; } = 5;
+    public virtual int Height {get; set; } = 5;
 
     public float MovingdirectionInDegrees { get; set; } = Random.Shared.Next(0, 360);
 

@@ -9,5 +9,6 @@ public enum EnumSelectableTool
     HumanHouse,
     HumanFarm,
     Inspect,
-    Erase
+    Erase,
+    Tree
 }

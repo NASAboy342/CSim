@@ -19,6 +19,7 @@ public class UIToolBar
             new Button("Human",() => SetSelectedTool(EnumSelectableTool.Human), Id: EnumSelectableTool.Human.ToString()),
             new Button("Human House",() => SetSelectedTool(EnumSelectableTool.HumanHouse), Id: EnumSelectableTool.HumanHouse.ToString()),
             new Button("Human Farm",() => SetSelectedTool(EnumSelectableTool.HumanFarm), Id: EnumSelectableTool.HumanFarm.ToString()),
+            new Button("Tree",() => SetSelectedTool(EnumSelectableTool.Tree), Id: EnumSelectableTool.Tree.ToString()),
             new Button("Inspect",() => SetSelectedTool(EnumSelectableTool.Inspect), Id: EnumSelectableTool.Inspect.ToString()),
             new Button("Erase",() => SetSelectedTool(EnumSelectableTool.Erase), Id: EnumSelectableTool.Erase.ToString()),
         });

@@ -21,7 +21,7 @@ public class UnitSpawner
 
     public void Update(MouseState mouseState)
     {
-        if (mouseState.LeftButton == ButtonState.Pressed && _isLastSpawnedDone)
+        if (mouseState.LeftButton == ButtonState.Pressed && _isLastSpawnedDone && IsMouseInGameArea(mouseState))
         {
             _isLastSpawnedDone = false;
             switch (_uiToolBar.SelectedTool)
@@ -32,6 +32,12 @@ public class UnitSpawner
                 case EnumSelectableTool.Tree:
                     SpawnTree(mouseState);
                     break;
+                case EnumSelectableTool.HumanHouse:
+                    SpawnHumanHouse(mouseState);
+                    break;
+                case EnumSelectableTool.Erase:
+                    RemoveUnit(mouseState);
+                    break;
                 default:
                     break;
             }
@@ -41,6 +47,33 @@ public class UnitSpawner
         {
             _isLastSpawnedDone = true;
         }
+    }
+
+    private void RemoveUnit(MouseState mouseState)
+    {
+        var mousePos = mouseState.Position.ToVector2() + _camera.Offset;
+        var unit = _world.GetUnitAtPosition(mousePos);
+        if (unit != null)
+        {
+            _world.RemoveUnit(unit);
+        }
+    }
+
+    private bool IsMouseInGameArea(MouseState mouseState)
+    {
+        var mouseX = mouseState.X + _camera.Offset.X;
+        var mouseY = mouseState.Y + _camera.Offset.Y;
+
+        return mouseX >= 0 && mouseX < _world.Width * _world.CellSize &&
+               mouseY >= 50 && mouseY < _world.Height * _world.CellSize;
+    }
+
+    private void SpawnHumanHouse(MouseState mouseState)
+    {
+        var newHouse = new UnitHumanHouse();
+        newHouse.Position = mouseState.Position.ToVector2();
+        newHouse.Position += _camera.Offset;
+        _world.AddUnit(newHouse);
     }
 
     private void SpawnTree(MouseState mouseState)

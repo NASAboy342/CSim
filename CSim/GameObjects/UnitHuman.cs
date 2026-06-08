@@ -7,13 +7,23 @@ namespace CSim.GameObjects;
 
 public class UnitHuman : Unit
 {
-    private UnitTree _closestTree;
+    public UnitTree ClosestTree;
+    public UnitHumanHouse ClosestHouse;
+    public EnumResourceType CarryingResource { get; set; } = EnumResourceType.None;
 
     public EnumHumanState State { get; set; } = EnumHumanState.Idle;
     public override void Draw(SpriteBatch spriteBatch, Texture2D pixel)
     {
         var rect = new Rectangle(Position.ToPoint(), new Point(Width, Height));
         spriteBatch.Draw(pixel, rect, Color.Brown);
+
+        if (CarryingResource != EnumResourceType.None) DrawCarryingResource(spriteBatch, pixel);
+    }
+
+    private void DrawCarryingResource(SpriteBatch spriteBatch, Texture2D pixel)
+    {
+        var resourceRect = new Rectangle((Position + new Vector2(Width, 0)).ToPoint(), new Point(4, 4));
+        spriteBatch.Draw(pixel, resourceRect, Color.DarkGray);
     }
 
     public override void Update(GameTime gameTime, World world)
@@ -23,27 +33,108 @@ public class UnitHuman : Unit
             case EnumHumanState.Idle:
                 WonderAroundToFindWork(gameTime, world);
                 break;
-            case EnumHumanState.Attacking:
-                break;
-            case EnumHumanState.Dead:
-                break;
             case EnumHumanState.WalkingToTree:
                 WalkToTree(gameTime, world);
+                break;
+            case EnumHumanState.CollectingResourceFromTree:
+                CollectResourceFromTree(gameTime, world);
+                break;
+            case EnumHumanState.GoingToHouse:
+                GoToHouse(gameTime, world);
+                break;
+            case EnumHumanState.SearchingForHouse:
+                SearchForHouse(gameTime, world);
+                break;
+            case EnumHumanState.DroppingResourceToHouse:
+                DropResourceToHouse(gameTime, world);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
 
-    private void WalkToTree(GameTime gameTime, World world)
+    private void DropResourceToHouse(GameTime gameTime, World world)
     {
-        var isTreeInRange = CustomMath.GetDistance(Position, _closestTree.Position) < 5f;
-        if (isTreeInRange)
+        if (ClosestHouse == null)
+        {
+            State = EnumHumanState.SearchingForHouse;
+            return;
+        }
+
+        ClosestHouse.ReceiveResource(CarryingResource);
+
+        CarryingResource = EnumResourceType.None;
+        State = EnumHumanState.Idle;
+    }
+
+    private void SearchForHouse(GameTime gameTime, World world)
+    {
+        var localUnits = world.GetLocalUnits(Position);
+        var houses = localUnits.FindAll(u => u is UnitHumanHouse);
+        var closestHouse = CustomMath.FindClosestUnit(Position, houses);
+        if (closestHouse != null){
+            ClosestHouse = (UnitHumanHouse)closestHouse;
+            State = EnumHumanState.GoingToHouse;
+        } else {
+            WonderAroundToFindWork(gameTime, world);
+        }
+    }
+
+    private void GoToHouse(GameTime gameTime, World world)
+    {   
+        if (ClosestHouse == null)
+        {
+            State = EnumHumanState.SearchingForHouse;
+            return;
+        }
+
+        var isHouseInRange = CustomMath.GetDistance(Position, ClosestHouse.Position) < 5f;
+        if (isHouseInRange)
+        {
+            CarryingResource = EnumResourceType.None;
+            State = EnumHumanState.DroppingResourceToHouse;
+            return;
+        }
+
+        var directionToHouse = CustomMath.GetDirectionInDegrees(Position, ClosestHouse.Position);
+        Speed = 5f;
+        MoveToNextPosition(directionToHouse, Speed, gameTime, world);
+    }
+
+    private void CollectResourceFromTree(GameTime gameTime, World world)
+    {
+        if (CarryingResource != EnumResourceType.None)
+        {
+            State = EnumHumanState.GoingToHouse;
+            return;
+        }
+
+        if (ClosestTree == null)
         {
             State = EnumHumanState.Idle;
             return;
         }
-        var directionToTree = CustomMath.GetDirectionInDegrees(Position, _closestTree.Position);
+
+        CarryingResource = ClosestTree.GetResource();
+
+        if (CarryingResource == EnumResourceType.None)
+        {
+            State = EnumHumanState.Idle;
+            return;
+        }
+
+        State = EnumHumanState.GoingToHouse;
+    }
+
+    private void WalkToTree(GameTime gameTime, World world)
+    {
+        var isTreeInRange = CustomMath.GetDistance(Position, ClosestTree.Position) < 5f;
+        if (isTreeInRange)
+        {
+            State = EnumHumanState.CollectingResourceFromTree;
+            return;
+        }
+        var directionToTree = CustomMath.GetDirectionInDegrees(Position, ClosestTree.Position);
         Speed = 5f;
         MoveToNextPosition(directionToTree, Speed, gameTime, world);
     }
@@ -60,7 +151,7 @@ public class UnitHuman : Unit
         var trees = localUnits.FindAll(u => u is UnitTree);
         var closestTree = CustomMath.FindClosestUnit(Position, trees);
         if (closestTree != null){
-            _closestTree = (UnitTree)closestTree;
+            ClosestTree = (UnitTree)closestTree;
             State = EnumHumanState.WalkingToTree;
         }
     }

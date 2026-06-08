@@ -62,6 +62,7 @@ public class Game1 : Game
         _debugLines.Clear();
         _debugLines.Add($"FPS: {_fPS}");
         _debugLines.Add($"Units count: {_world.Units.Count}");
+        _debugLines.Add($"Mouse: {Mouse.GetState().Position.X}, {Mouse.GetState().Position.Y}");
         _uiToolBar.Update(Mouse.GetState());
         _unitSpawner.Update(Mouse.GetState());
 

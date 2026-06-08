@@ -54,4 +54,15 @@ public class Unit
             Math.Clamp(nextPosition.Y, 0f, maxY)
         );
     }
+
+    internal bool IsMouseOverBound(Vector2 mousePos)
+    {
+        var rect = new Rectangle(Position.ToPoint(), new Point(Width, Height));
+        return rect.Contains(mousePos);
+    }
+
+    public virtual bool IsNeedToDelete()
+    {
+        return false;
+    }
 }

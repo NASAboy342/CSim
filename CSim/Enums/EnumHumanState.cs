@@ -5,5 +5,9 @@ public enum EnumHumanState
     Idle,
     Attacking,
     Dead,
-    WalkingToTree
+    WalkingToTree,
+    CollectingResourceFromTree,
+    GoingToHouse,
+    SearchingForHouse,
+    DroppingResourceToHouse
 }

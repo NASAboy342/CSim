@@ -17,6 +17,7 @@ public class World
     public float Frequency { get; set; } = 0.02f;
     public List<List<int>> Terrain { get; set; } = new List<List<int>>();
     public List<Unit> Units { get; set; } = new List<Unit>();
+    private List<Unit> PendingDeleteUnits { get; set; } = new List<Unit>();
 
     public World()
     {
@@ -130,7 +131,17 @@ public class World
         foreach (var unit in Units)
         {
             unit.Update(gameTime, this);
+            if (unit.IsNeedToDelete())
+            {
+                PendingDeleteUnits.Add(unit);
+            }
         }
+
+        foreach (var unit in PendingDeleteUnits)
+        {
+            Units.Remove(unit);
+        }
+        PendingDeleteUnits.Clear();
     }
 
     public List<Unit> GetLocalUnits(Vector2 position)
@@ -145,5 +156,22 @@ public class World
             }
         }
         return localUnits;
+    }
+
+    internal Unit GetUnitAtPosition(Vector2 mousePos)
+    {
+        foreach (var unit in Units)
+        {
+            if (unit.IsMouseOverBound(mousePos))
+            {
+                return unit;
+            }
+        }
+        return null;
+    }
+
+    internal void RemoveUnit(Unit unit)
+    {
+        Units.Remove(unit);
     }
 }

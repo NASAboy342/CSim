@@ -32,7 +32,7 @@ public class Unit
         spriteBatch.Draw(pixel, rect, Color.Red);
     }
 
-    public void MoveToNextPosition(float directionDegrees, float speed, GameTime gameTime, World world)
+    public virtual void MoveToNextPosition(float directionDegrees, float speed, GameTime gameTime, World world)
     {
         if (world is null)
         {

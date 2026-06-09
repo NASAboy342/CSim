@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CSim.Enums;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -23,5 +24,14 @@ public class UnitHumanHouse : Unit
     internal void ReceiveResource(EnumResourceType carryingResource)
     {
         StoredResources.Add(carryingResource);
+    }
+
+    internal EnumResourceType ProvideFood()
+    {
+        if (StoredResources.Where(r => r == EnumResourceType.Food).Count() == 0) return EnumResourceType.None;
+
+        var resource = StoredResources.First(r => r == EnumResourceType.Food);
+        StoredResources.Remove(resource);
+        return resource;
     }
 }

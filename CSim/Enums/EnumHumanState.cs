@@ -9,5 +9,6 @@ public enum EnumHumanState
     CollectingResourceFromTree,
     GoingToHouse,
     SearchingForHouse,
-    DroppingResourceToHouse
+    DroppingResourceToHouse,
+    GoingToEat
 }

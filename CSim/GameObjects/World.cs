@@ -23,6 +23,52 @@ public class World
     {
         Seed = new Random().Next();
         GenerateTerrain();
+        GenerateResources();
+    }
+
+    private void GenerateResources()
+    {
+        var totalTrees = 2000;
+        for (int i = 0; i < totalTrees; i++)
+        {
+            var newTree = new UnitTree();
+            newTree.Position = GetRandomPositionAboveWaterAndBelowRockyMount();
+            Units.Add(newTree);
+        }
+    }
+
+    private Vector2 GetRandomPositionAboveWaterAndBelowRockyMount()
+    {
+        while (true)
+        {
+            var newPosition = new Vector2(Random.Shared.Next(0, Width * CellSize), Random.Shared.Next(0, Height * CellSize));
+            var terrainX = (int)(newPosition.X / CellSize);
+            var terrainY = (int)(newPosition.Y / CellSize);
+
+            var terrainType = GetTerrainType(Terrain[terrainX][terrainY]);
+
+            if (terrainType.Type != EnumTerrainType.Water && terrainType.Type != EnumTerrainType.DeepWater && terrainType.Type != EnumTerrainType.Mountain && terrainType.Type != EnumTerrainType.Snow)
+            {
+                return newPosition;
+            }
+        }
+    }
+
+    private Vector2 GetRandomPositionAboveWater()
+    {
+        while (true)
+        {
+            var newPosition = new Vector2(Random.Shared.Next(0, Width * CellSize), Random.Shared.Next(0, Height * CellSize));
+            var terrainX = (int)(newPosition.X / CellSize);
+            var terrainY = (int)(newPosition.Y / CellSize);
+
+            var terrainType = GetTerrainType(Terrain[terrainX][terrainY]);
+
+            if (terrainType.Type != EnumTerrainType.Water && terrainType.Type != EnumTerrainType.DeepWater)
+            {
+                return newPosition;
+            }
+        }
     }
 
     public void GenerateTerrain()
@@ -91,7 +137,7 @@ public class World
 
     private TerrainType GetTerrainType(int elevation)
     {
-        if (elevation < 37)
+        if (elevation < 35)
         {
             return new TerrainType { Type = EnumTerrainType.DeepWater, Color = Color.DarkBlue };
         }
